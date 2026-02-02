@@ -445,7 +445,7 @@ POST /webhook/g_cancel_booking
 ### Medical Spa (Lumina MedSpa)
 - **Special Rule**: First-time injectable treatments require complimentary 15-minute consultation
 - **Services**: Neuromodulators, Dermal Fillers, Skin Boosters, etc.
-- **Location**: 310 Cornwall Rd, Oakville
+- **Location**: 310 Cornwall Rd, Oakville (Dummy)
 
 ### Restaurant (Alder & Ash Toronto)
 - **Party Size Rules**:
@@ -455,7 +455,7 @@ POST /webhook/g_cancel_booking
   - 24+ guests: Cannot accommodate
 
 ### Pet Grooming (Toronto Pets)
-- **Location**: Mississauga
+- **Location**: Mississauga (Dummy)
 - **Services**: Cat/Dog grooming with various packages
 
 ---
@@ -483,5 +483,5 @@ This system configuration is proprietary. Contact the system administrator for u
 ## Support
 
 For technical issues:
-- **Transfer Number**: +1 856-363-0633
-- **Email**: reservations@alderandash.ca (for restaurant inquiries)
+- **Transfer Number**: +92 333 8122531
+- **Email**: muhammadnadeem51200@gmail.com
