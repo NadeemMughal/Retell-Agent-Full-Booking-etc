@@ -1,0 +1,2004 @@
+{
+  "name": "g_cancel_booking",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "g_cancel_booking",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1776,
+        -16
+      ],
+      "id": "52356ff3-ef95-441e-9d65-60dbffb3d230",
+      "name": "Webhook",
+      "webhookId": "9cc421a6-e49b-4b47-8ba4-d59c97b051dd"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3a11e276-1269-4a0f-8065-bb52b32d674f",
+              "leftValue": "={{ $json.crm_type }}",
+              "rightValue": "NULL",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1328,
+        -16
+      ],
+      "id": "c14f6cbb-4f41-4d82-9f42-b184a2bc8d78",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "Square",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "bfab2181-2e3f-4d99-9f83-4c5414b9e4a0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Square"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "13f7aa4e-f0b9-40ae-aa3e-aa65ffe11b75",
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "ghl",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "GoHighLevel"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1104,
+        176
+      ],
+      "id": "6ca46daa-d201-48f6-ab38-c2c60fcab99d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "url": "https://connect.squareup.com/v2/bookings",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer  {{ $('clientCredentials').item.json.crm_api_key }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        -16
+      ],
+      "id": "2da3bd50-62e6-4d5a-8e99-e6daeb629bf6",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1abd6d3-3e73-4b67-a802-f47adce2d281",
+              "name": "message",
+              "value": "Not Exists",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -208,
+        176
+      ],
+      "id": "5027e12d-d1b4-4230-88e2-be05ce5cf00c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.squareup.com/v2/customers/search",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('clientCredentials').item.json.crm_api_key }}\"\n}\n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {\n    \"filter\": {\n      \"phone_number\": {\n        \"fuzzy\": \"{{ $('Webhook').item.json.body.args.phone }}\"\n      }\n    }\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -656,
+        80
+      ],
+      "id": "2409c829-20f5-4381-b0b5-4db1713edcdf",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        16,
+        176
+      ],
+      "id": "7fdb72d6-3cf1-492a-855b-4845e66faca4",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a5730507-a127-48ba-b3ba-e3bc7f9757e5",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "=ACCEPTED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        -16
+      ],
+      "id": "2ef925b5-a346-4406-ad94-d837cca5ba0b",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7247a632-780a-4780-9dfc-d54d1b434cb2",
+              "name": "message",
+              "value": "Booking not Found",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        80
+      ],
+      "id": "5c61a421-7e94-4c51-a8b9-bd479a50e001",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        912,
+        80
+      ],
+      "id": "01f24f5e-4bab-43c2-ad0d-cc8a91fad98c",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://connect.squareup.com/v2/bookings/{{ $json.id }}/cancel",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('clientCredentials').first().json.crm_api_key }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        -112
+      ],
+      "id": "19373797-a83f-46ad-abe7-447032f2601b",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "efdf4aa2-d257-4f88-ad28-38411f4cd341",
+              "name": "message",
+              "value": "Cancel Booking Succssfully ",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        912,
+        -112
+      ],
+      "id": "e09ebbe2-30cd-430a-ae70-652c06fcc658",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1360,
+        -112
+      ],
+      "id": "942dcb1d-10e6-446f-87b8-7db7ae9f069b",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "51dffc54-a470-44a4-883f-8e2f192c6923",
+              "leftValue": "={{ $json.customers[0] }}",
+              "rightValue": "={{ $json.customers[0].id }}",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -432,
+        80
+      ],
+      "id": "8126236d-cec6-46c4-a2aa-25b3e071d46a",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "client",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "={{ $json.body.args.clientId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1552,
+        -16
+      ],
+      "id": "fe7fe14c-36ef-49c1-bb58-aad9853d9672",
+      "name": "clientCredentials",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data from the previous node (e.g., HTTP node)\nconst inputData = $input.all();\n\n// Check if input data exists and has the expected structure\nif (!inputData || !inputData[0]?.json?.bookings) {\n  return [{\n    json: {\n      message: \"No valid bookings data found\"\n    }\n  }];\n}\n\n// Assuming the input data is the provided JSON structure\nconst bookings = inputData[0].json.bookings;\n\n// Define the customer_id and start_at to filter by\nlet customerId, startAtFilter;\ntry {\n  customerId = $('HTTP Request1').first().json.customers[0].id;\n  startAtFilter = $('Code1').first().json.update_time;\n} catch (error) {\n  return [{\n    json: {\n      message: \"Error retrieving customer_id or start_at: \" + error.message\n    }\n  }];\n}\n\n// Validate customerId and startAtFilter\nif (!customerId || !startAtFilter) {\n  return [{\n    json: {\n      message: `Invalid customer_id (${customerId}) or start_at (${startAtFilter})`\n    }\n  }];\n}\n\n// Filter bookings by customer_id and start_at\nconst matchedBookings = bookings.filter(\n  booking => booking.customer_id === customerId && booking.start_at === startAtFilter\n);\n\n// Prepare the output in n8n format, ensuring address is included when present\nconst output = matchedBookings.map(booking => ({\n  json: {\n    ...booking,\n    address: booking.address || { // Ensure address is included, even if empty\n      address_line_1: \"\",\n      address_line_2: \"\",\n      locality: \"\",\n      administrative_district_level_1: \"\",\n      postal_code: \"\"\n    }\n  }\n}));\n\n// Return a message if no bookings are found\nif (output.length === 0) {\n  return [{\n    json: {\n      message: `No bookings found for customer ID: ${customerId} with start_at: ${startAtFilter}`\n    }\n  }];\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        -16
+      ],
+      "id": "daab27f6-959c-43e9-a339-b25213d18882",
+      "name": "Filter bookings",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Safe recursive search for a key in any object/array\nfunction findKey(obj, key) {\n  if (obj && typeof obj === 'object') {\n    if (Object.prototype.hasOwnProperty.call(obj, key)) {\n      return obj[key];\n    }\n    for (let k in obj) {\n      const found = findKey(obj[k], key);\n      if (found !== undefined) return found;\n    }\n  }\n  return undefined;\n}\n\nconst accepted = [];\n\nitems.forEach(item => {\n  const status = findKey(item, 'status');\n\n  if (status === 'ACCEPTED') {\n    // Find the full booking object — assuming it's the parent object of 'status'\n    const bookingObject = item.json && Object.keys(item.json).length > 0 ? item.json : item;\n    accepted.push({ json: bookingObject });\n  }\n});\n\nreturn accepted;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -16
+      ],
+      "id": "b3735331-f6f3-46c2-a844-64b65be9ce97",
+      "name": "search booking"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "name": "Respond Client Not Found",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        -112
+      ],
+      "id": "932eb91b-3f35-490e-ac66-8963b8b2b836"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond Event Not Found",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        -208
+      ],
+      "id": "651744eb-9686-4dcf-b906-aff4769db997"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"response\" :\"Your appointment has been canceled\"\n}",
+        "options": {}
+      },
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        -416
+      ],
+      "id": "f9f9a905-5af3-4dd9-ab32-b36aedb57b49",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('clientCredentials').first().json.calendar_id }}",
+          "mode": "id"
+        },
+        "eventId": "={{ $json.eventId }}",
+        "options": {
+          "sendUpdates": "all"
+        }
+      },
+      "name": "Delete Google Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        16,
+        -400
+      ],
+      "id": "94a13e78-422d-4680-9a17-bfd2d743b784",
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OgBzpLjgpwAE07vo",
+          "name": "projects.metaviz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $('Filter Matching Event').all().length }}",
+              "operation": "larger"
+            }
+          ]
+        }
+      },
+      "name": "If Event Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        -304
+      ],
+      "id": "3fa85149-416e-4c20-b191-7ee06383c727"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst webhookData = $('Webhook').first().json;\nconst inputEvents = $input.all();\n\nfunction normalizePhone(phone) {\n  if (!phone) return '';\n  return phone.replace(/\\D/g, '');\n}\n\n// Extract details from webhook\nlet targetStart, targetEnd, targetEventId, targetPhone;\n\ntry {\n  const args = webhookData.body?.args || {};\n  targetStart = $('Code').first().json.formattedStartTime\n  targetEnd = $('Code').first().json.formattedEndTime\n  targetEventId = args.eventId || args.appointmentId || args.id;\n  targetPhone = args.phone || args.phoneNumber || args.clientPhone;\n} catch (error) {\n  return [{ message: \"Error processing cancellation request\", error: error.message }];\n}\n\n// Debug info\nconst debugOutput = [];\n\nconst matchingEvents = inputEvents.filter(event => {\n  const eventData = event.json;\n  if (!eventData.start || !eventData.end) return false;\n\n  const eventDescription = eventData.description || \"\";\n  const eventPhoneInDescription = normalizePhone(eventDescription);\n  const targetPhoneNormalized = normalizePhone(targetPhone);\n\n  debugOutput.push({\n    eventId: eventData.id,\n    eventPhoneInDescription,\n    targetPhoneNormalized,\n    startMatch: new Date(eventData.start.dateTime || eventData.start.date).getTime() === new Date(targetStart).getTime(),\n    endMatch: new Date(eventData.end.dateTime || eventData.end.date).getTime() === new Date(targetEnd).getTime()\n  });\n\n  // Match by start/end times (required)\n  const normalizeTime = (t) => new Date(t).getTime();\n  const timeMatches =\n    targetStart && targetEnd &&\n    normalizeTime(eventData.start.dateTime || eventData.start.date) === normalizeTime(targetStart) &&\n    normalizeTime(eventData.end.dateTime || eventData.end.date) === normalizeTime(targetEnd);\n\n  if (!timeMatches) return false;\n\n  // Optionally match by phone if provided\n  if (targetPhoneNormalized && eventPhoneInDescription.includes(targetPhoneNormalized)) {\n    return true;\n  }\n\n  // If no phone is provided, rely solely on time match\n  return !targetPhoneNormalized;\n});\n\nif (matchingEvents.length > 0) {\n  return matchingEvents.map(event => {\n    const e = event.json;\n    return {\n      eventId: e.id,\n      summary: e.summary,\n      startDateTime: e.start.dateTime,\n      endDateTime: e.end.dateTime,\n      timeZone: e.start.timeZone || \"\",\n      created: e.created,\n      updated: e.updated,\n      status: e.status,\n      description: e.description || \"\",\n      phone: e.description ? e.description.match(/\\+?\\d{10,}/)?.[0] || \"\" : \"\",\n    };\n  });\n} else {\n  return [\n    { message: \"No matching appointments found\" },\n    { debug: debugOutput },\n    { webhookData }\n  ];\n}"
+      },
+      "name": "Filter Matching Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        -304
+      ],
+      "id": "7d7bb2e1-6095-4518-bfb0-df8d11efd318",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('clientCredentials').item.json.calendar_id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "name": "Find Google Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -656,
+        -304
+      ],
+      "id": "b280e393-a820-40be-8813-1f71859e2e91",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OgBzpLjgpwAE07vo",
+          "name": "projects.metaviz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $('clientCredentials').all().length }}",
+              "operation": "larger"
+            }
+          ]
+        }
+      },
+      "name": "If Client Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        -208
+      ],
+      "id": "bb154b8b-193f-41cc-9713-285db91f229d"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get webhook data\nconst data = $node[\"Webhook\"].json;\n\n// Check if data is an array or single object\nconst items = Array.isArray(data) ? data : [data];\n\n// Get timezone from another node (e.g., Supabase) or webhook data\n// Adjust the node name or path as needed\nconst timeZone = $input.all()[0]?.json?.Time_Zone || items[0]?.Time_Zone;\n\nreturn items.map(item => {\n    // Validate webhook data\n    if (!item.body || !item.body.args || typeof item.body.args !== 'object') {\n        throw new Error('Missing or invalid \"body.args\" in webhook data');\n    }\n\n    // Extract times\n    const startUTC = item.body.args.starttime;\n    const endUTC = item.body.args.endtime;\n\n    // Validate times\n    if (!startUTC || !endUTC) {\n        throw new Error('Missing starttime or endtime in webhook data');\n    }\n\n    // Validate timezone\n    if (!timeZone) {\n        throw new Error('Missing Time_Zone in input data');\n    }\n\n    // Ensure UTC format without forcing Z\n    function ensureUTCFormat(dateString) {\n        return dateString;\n    }\n\n    // Format times\n    const startUTCFormatted = ensureUTCFormat(startUTC);\n    const endUTCFormatted = ensureUTCFormat(endUTC);\n\n    // Convert to Date objects\n    const startDate = new Date(startUTCFormatted);\n    const endDate = new Date(endUTCFormatted);\n\n    // Validate dates\n    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {\n        throw new Error('Invalid starttime or endtime format');\n    }\n\n    // Format date with provided timezone offset\n    function convertToTimezone(date, timezone) {\n        // Format date\n        const year = date.getUTCFullYear();\n        const month = String(date.getUTCMonth() + 1).padStart(2, '0');\n        const day = String(date.getUTCDate()).padStart(2, '0');\n        const hour = String(date.getUTCHours()).padStart(2, '0');\n        const minute = String(date.getUTCMinutes()).padStart(2, '0');\n        const second = String(date.getUTCSeconds()).padStart(2, '0');\n        \n        // Append the provided timezone offset as is\n        return `${year}-${month}-${day}T${hour}:${minute}:${second}${timezone}`;\n    }\n\n    // Convert times\n    const formattedStart = convertToTimezone(startDate, timeZone);\n    const formattedEnd = convertToTimezone(endDate, timeZone);\n\n    // Return result\n    return {\n        formattedStartTime: formattedStart,\n        formattedEndTime: formattedEnd,\n        usedTimeZone: timeZone,\n        originalStartTime: startUTC,\n        originalEndTime: endUTC\n    };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -208
+      ],
+      "id": "48558686-76a5-4a9a-8501-44eb675a35f6",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if crm_api_key exists and is not undefined or \"undefined\"\nif (!$json[\"crm_api_key\"] || $json[\"crm_api_key\"] === \"undefined\") {\n  return [{ json: { error: \"crm_api_key is undefined or missing\" } }];\n}\n\ntry {\n  // Parse the crm_api_key field (it's a JSON string with an array inside)\n  const crmApiKey = JSON.parse($json[\"crm_api_key\"]);\n\n  // Check if crmApiKey is an array and has at least one element\n  if (!Array.isArray(crmApiKey) || crmApiKey.length === 0) {\n    return [{ json: { error: \"crm_api_key is not a valid array or is empty\" } }];\n  }\n\n  // The first element of the array is the response object\n  const response = crmApiKey[0];\n\n  // Return the parsed response with access_token, refresh_token, etc.\n  return [{ json: response }];\n} catch (error) {\n  // Return error details for debugging\n  return [{ json: { error: \"Failed to parse JSON\", details: error.message } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        352
+      ],
+      "id": "ea88e9f0-3892-48dd-894e-33446240ed85",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input\nconst items = $input.all();\n\n// Example target times (replace with your variables or input data)\nconst targetStart =$('Webhook').first().json.body.args.targetStart;\n// const targetEnd = \"2025-09-02 09:30:00\";\n\nlet matches = [];\n\nfor (const item of items) {\n  const events = item.json.events || [];\n\n  for (const event of events) {\n    if (event.startTime === targetStart) {\n      matches.push({\n        json: {\n          id: event.id,\n          title: event.title,\n          startTime: event.startTime,\n          endTime: event.endTime\n        }\n      });\n    }\n  }\n}\n\nreturn matches;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        416
+      ],
+      "id": "64b27c85-f57d-45de-9f7a-f051ee4d6583",
+      "name": "Code5"
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{$json.Contact_id}}/appointments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$('Code4').item.json.access_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -320,
+        416
+      ],
+      "id": "482ee4d2-b51a-425c-8ab2-14153ed9b8ba",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://services.leadconnectorhq.com/calendars/events/{{$json.id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Code4').item.json.access_token }}"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        128,
+        416
+      ],
+      "id": "cecd6ba7-f5be-4706-a34b-0a59864807b1",
+      "name": "HTTP Request4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c09505db-8043-4881-a9c9-632e532427c0",
+              "name": "message",
+              "value": "Booking cancel Successfully",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        416
+      ],
+      "id": "61d1b5a0-d4a7-4f07-b7c1-55e30ec9ca9e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        944,
+        416
+      ],
+      "id": "c9c69a09-f8f5-4cfc-9f61-36d1b8d0d695",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const client_credential = $node[\"clientCredentials\"].json;\nconst webhook_data = $node[\"Webhook\"].json;\n\n// Helper to format ISO string without milliseconds\nfunction toIsoWithoutMs(date) {\n  return date.toISOString().replace(/\\.\\d{3}Z$/, \"Z\");\n}\n\n// Function to adjust time based on timezone\nfunction adjustTimeWithTimezone(startTime, endTime, timeZone) {\n  const validTimeZone =\n    typeof timeZone === \"string\" && /^[-+]\\d{2}:\\d{2}$/.test(timeZone)\n      ? timeZone\n      : $('clientCredentials').first().json.Time_Zone;\n  \n  if (!validTimeZone) return { starttime: startTime, endtime: endTime };\n  \n  const sign = validTimeZone.startsWith(\"-\") ? 1 : -1;\n  const [hours, minutes] = validTimeZone\n    .replace(/[-+]/, \"\")\n    .split(\":\")\n    .map(Number);\n  const offsetMs = (hours * 60 + minutes) * 60 * 1000 * sign;\n  const startDate = new Date(startTime);\n  const endDate = new Date(endTime);\n  const adjustedStart = new Date(startDate.getTime() + offsetMs);\n  const adjustedEnd = new Date(endDate.getTime() + offsetMs);\n  return {\n    starttime: toIsoWithoutMs(adjustedStart),\n    endtime: toIsoWithoutMs(adjustedEnd),\n  };\n}\n\n// Ensure webhook_data is an array\nconst webhookArray = Array.isArray(webhook_data) ? webhook_data : [webhook_data];\n\n// Debug: Log the webhook data structure\nconsole.log(\"Webhook data structure:\", JSON.stringify(webhookArray, null, 2));\n\n// Process the webhook data\nconst result = webhookArray.map((item) => {\n  const timeZone = client_credential[0]?.Time_Zone;\n  \n  // FIXED: Correct path to access update_time\n  const { update_time } = item.body?.args || {};\n  \n  console.log(\"Extracted update_time:\", update_time); // Debug log\n  \n  if (!update_time) {\n    console.log(\"No update_time found, returning empty object\");\n    return {}; // Return empty object if no update_time\n  }\n  \n  const adjustedTimes = adjustTimeWithTimezone(update_time, update_time, timeZone);\n  \n  console.log(\"Adjusted times:\", adjustedTimes); // Debug log\n  \n  return { update_time: adjustedTimes.starttime };\n});\n\nconsole.log(\"Final result:\", result); // Debug log\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        80
+      ],
+      "id": "5091810c-016c-43a0-b443-826e5d9d80db",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "customers",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "keyValue": "={{ $('Webhook').item.json.body.args.phone }}"
+            },
+            {
+              "keyName": "agent_id",
+              "keyValue": "={{ $('Webhook').item.json.body.call.agent_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        352
+      ],
+      "id": "2970d042-af20-4e0e-9225-ef63c993b87d",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Webhook').first().json.body.call.to_number }}",
+        "to": "={{ $('Webhook').first().json.body.call.from_number }}",
+        "message": "=Hi, Your Appointment has been canceled.   \nDate And Time:  \nStart At:{{ $('Webhook').first().json.body.args.starttime }} \nEnd At: {{ $('Webhook').first().json.body.args.endtime }}  \nWith: {{ $('clientCredentials').first().json.business_name }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        224,
+        -400
+      ],
+      "id": "fc267a93-eab6-4834-bc27-d213c23f40bc",
+      "name": "Send an SMS/MMS/WhatsApp message",
+      "credentials": {
+        "twilioApi": {
+          "id": "co7Xlb1CtK2sVaHl",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Webhook').item.json.body.call.to_number }}",
+        "to": "={{ $('Webhook').item.json.body.call.from_number }}",
+        "message": "=Hi, Your appointment on {{ $('Webhook').item.json.body.args.update_time }} with {{ $('clientCredentials').first().json.business_name }} has been canceled.   ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -112
+      ],
+      "id": "8a2d01b6-e48f-404a-abe9-7a0ef9fdc3fd",
+      "name": "Send an SMS/MMS/WhatsApp message1",
+      "credentials": {
+        "twilioApi": {
+          "id": "co7Xlb1CtK2sVaHl",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Webhook').item.json.body.call.to_number }}",
+        "to": "={{ $('Webhook').item.json.body.call.from_number }}",
+        "message": "=Hi, Your appointment on {{ $('Webhook').item.json.body.args.targetStart }} with {{ $('clientCredentials').first().json.business_name }} has been canceled.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        560,
+        416
+      ],
+      "id": "a44b5148-a991-41ce-bd14-5f6359a14dc9",
+      "name": "Send an SMS/MMS/WhatsApp message2",
+      "credentials": {
+        "twilioApi": {
+          "id": "co7Xlb1CtK2sVaHl",
+          "name": "Twilio account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv899746.hstgr.cloud",
+            "user-agent": "axios/1.11.0",
+            "content-length": "10794",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "100.20.5.228",
+            "x-forwarded-host": "n8n.srv899746.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "1f699411ba4c",
+            "x-real-ip": "100.20.5.228",
+            "x-retell-signature": "v=1758622777214,d=a392fbb1635ec78087a874eb8399c3cf70047c9d76c736d75ccbbdadb29d0735"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "call": {
+              "call_id": "call_2989269cbcba00626d668e85073",
+              "call_type": "phone_call",
+              "agent_id": "agent_80a7e5ddade104137ac8aba68c",
+              "agent_version": 0,
+              "agent_name": "GHL-LuminaMedSpaOakville",
+              "retell_llm_dynamic_variables": {
+                "twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "twilio-callsid": "CA3fbf60d1e5dd0917f381e19802e73a28",
+                "first_name": "John",
+                "last_name": "Doe",
+                "customer_email": "",
+                "customer_id": "b87fdb4f-5e94-4109-b254-a9bef9cb5bc5",
+                "preferred_service": "",
+                "preferred_time_slot": "",
+                "total_visits": "",
+                "total_spent": "",
+                "last_visit_date": "",
+                "customer_notes": "",
+                "account_status": "active",
+                "customer_status": "existing"
+              },
+              "custom_sip_headers": {
+                "x-twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "x-twilio-callsid": "CA3fbf60d1e5dd0917f381e19802e73a28"
+              },
+              "call_status": "ongoing",
+              "start_timestamp": 1758622745929,
+              "transcript": "Agent: Hi John Doe, Lumina MedSpa here! How can I help you today?\nUser: I want cancel my all booked department.\nAgent: Let me check your booked slot, Please hold on.I found the following appointments under your name:  \n1. September 24, 2025, from 2:00 \nUser: Go \nAgent: PM to \nUser: ahead.\nUser: Go ahead and cancel all appointments.\nAgent: I am cancelling your appointments, \n",
+              "transcript_object": [
+                {
+                  "role": "agent",
+                  "content": "Hi John Doe, Lumina MedSpa here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi ",
+                      "start": 1.668,
+                      "end": 1.912
+                    },
+                    {
+                      "word": "John ",
+                      "start": 1.912,
+                      "end": 2.074
+                    },
+                    {
+                      "word": "Doe, ",
+                      "start": 2.074,
+                      "end": 2.248
+                    },
+                    {
+                      "word": "Lumina ",
+                      "start": 2.248,
+                      "end": 2.515
+                    },
+                    {
+                      "word": "MedSpa ",
+                      "start": 2.515,
+                      "end": 2.829
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.829,
+                      "end": 3.34
+                    },
+                    {
+                      "word": " How ",
+                      "start": 3.385708251953125,
+                      "end": 3.548708251953125
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.548708251953125,
+                      "end": 3.687708251953125
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.687708251953125,
+                      "end": 3.757708251953125
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.757708251953125,
+                      "end": 3.943708251953125
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.943708251953125,
+                      "end": 4.059708251953125
+                    },
+                    {
+                      "word": "today?",
+                      "start": 4.059708251953125,
+                      "end": 4.593708251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want cancel my all booked department.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 5.9429996,
+                      "end": 6.183
+                    },
+                    {
+                      "word": "want ",
+                      "start": 6.183,
+                      "end": 6.343
+                    },
+                    {
+                      "word": "cancel ",
+                      "start": 6.503,
+                      "end": 7.063
+                    },
+                    {
+                      "word": "my ",
+                      "start": 7.063,
+                      "end": 7.543
+                    },
+                    {
+                      "word": "all ",
+                      "start": 7.543,
+                      "end": 7.9430000000000005
+                    },
+                    {
+                      "word": "booked ",
+                      "start": 7.9430000000000005,
+                      "end": 8.423
+                    },
+                    {
+                      "word": "department.",
+                      "start": 8.423,
+                      "end": 8.822999999999999
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me check your booked slot, Please hold on.I found the following appointments under your name:  \n1. September 24, 2025, from 2:00 ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 13.399,
+                      "end": 13.538
+                    },
+                    {
+                      "word": "me ",
+                      "start": 13.538,
+                      "end": 13.62
+                    },
+                    {
+                      "word": "check ",
+                      "start": 13.62,
+                      "end": 13.817
+                    },
+                    {
+                      "word": "your ",
+                      "start": 13.817,
+                      "end": 13.945
+                    },
+                    {
+                      "word": "booked ",
+                      "start": 13.945,
+                      "end": 14.165
+                    },
+                    {
+                      "word": "slot, ",
+                      "start": 14.165,
+                      "end": 14.583
+                    },
+                    {
+                      "word": "Please ",
+                      "start": 14.583,
+                      "end": 15.001
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 15.001,
+                      "end": 15.373
+                    },
+                    {
+                      "word": "on.",
+                      "start": 15.373,
+                      "end": 15.988
+                    },
+                    {
+                      "word": "I ",
+                      "start": 16.011083251953124,
+                      "end": 16.174083251953125
+                    },
+                    {
+                      "word": "found ",
+                      "start": 16.174083251953125,
+                      "end": 16.360083251953125
+                    },
+                    {
+                      "word": "the ",
+                      "start": 16.360083251953125,
+                      "end": 16.452083251953123
+                    },
+                    {
+                      "word": "following ",
+                      "start": 16.452083251953123,
+                      "end": 16.812083251953126
+                    },
+                    {
+                      "word": "appointments ",
+                      "start": 16.812083251953126,
+                      "end": 17.300083251953126
+                    },
+                    {
+                      "word": "under ",
+                      "start": 17.300083251953126,
+                      "end": 17.602083251953125
+                    },
+                    {
+                      "word": "your ",
+                      "start": 17.602083251953125,
+                      "end": 17.846083251953125
+                    },
+                    {
+                      "word": "name: ",
+                      "start": 17.846083251953125,
+                      "end": 18.565083251953126
+                    },
+                    {
+                      "word": " \n1. ",
+                      "start": 18.565083251953126,
+                      "end": 19.192083251953125
+                    },
+                    {
+                      "word": "September ",
+                      "start": 19.204458251953124,
+                      "end": 19.749458251953126
+                    },
+                    {
+                      "word": "24, ",
+                      "start": 19.749458251953126,
+                      "end": 20.040458251953126
+                    },
+                    {
+                      "word": "2025, ",
+                      "start": 20.040458251953126,
+                      "end": 20.516458251953125
+                    },
+                    {
+                      "word": "from ",
+                      "start": 20.516458251953125,
+                      "end": 20.922458251953124
+                    },
+                    {
+                      "word": "2:00 ",
+                      "start": 20.922458251953124,
+                      "end": 21.224458251953124
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 1
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Go ",
+                  "words": [
+                    {
+                      "word": "Go ",
+                      "start": 21.823,
+                      "end": 22.303
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "PM to ",
+                  "words": [
+                    {
+                      "word": "PM ",
+                      "start": 21.224458251953124,
+                      "end": 22.094458251953125
+                    },
+                    {
+                      "word": "to ",
+                      "start": 22.094458251953125,
+                      "end": 22.385458251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 1
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "ahead.",
+                  "words": [
+                    {
+                      "word": "ahead.",
+                      "start": 22.303,
+                      "end": 22.622999999999998
+                    }
+                  ]
+                },
+                {
+                  "role": "user",
+                  "content": "Go ahead and cancel all appointments.",
+                  "words": [
+                    {
+                      "word": "Go ",
+                      "start": 23.403,
+                      "end": 23.883
+                    },
+                    {
+                      "word": "ahead ",
+                      "start": 23.883,
+                      "end": 24.282999999999998
+                    },
+                    {
+                      "word": "and ",
+                      "start": 24.282999999999998,
+                      "end": 24.683001
+                    },
+                    {
+                      "word": "cancel ",
+                      "start": 25.463,
+                      "end": 26.343
+                    },
+                    {
+                      "word": "all ",
+                      "start": 27.143,
+                      "end": 27.463
+                    },
+                    {
+                      "word": "appointments.",
+                      "start": 27.463,
+                      "end": 27.942999999999998
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "I am cancelling your appointments, ",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 29.812,
+                      "end": 29.905
+                    },
+                    {
+                      "word": "am ",
+                      "start": 29.905,
+                      "end": 30.055
+                    },
+                    {
+                      "word": "cancelling ",
+                      "start": 30.055,
+                      "end": 30.45
+                    },
+                    {
+                      "word": "your ",
+                      "start": 30.45,
+                      "end": 30.578
+                    },
+                    {
+                      "word": "appointments, ",
+                      "start": 30.578,
+                      "end": 31.054
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 7
+                  }
+                }
+              ],
+              "transcript_with_tool_calls": [
+                {
+                  "role": "agent",
+                  "content": "Hi John Doe, Lumina MedSpa here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi ",
+                      "start": 1.668,
+                      "end": 1.912
+                    },
+                    {
+                      "word": "John ",
+                      "start": 1.912,
+                      "end": 2.074
+                    },
+                    {
+                      "word": "Doe, ",
+                      "start": 2.074,
+                      "end": 2.248
+                    },
+                    {
+                      "word": "Lumina ",
+                      "start": 2.248,
+                      "end": 2.515
+                    },
+                    {
+                      "word": "MedSpa ",
+                      "start": 2.515,
+                      "end": 2.829
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.829,
+                      "end": 3.34
+                    },
+                    {
+                      "word": " How ",
+                      "start": 3.385708251953125,
+                      "end": 3.548708251953125
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.548708251953125,
+                      "end": 3.687708251953125
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.687708251953125,
+                      "end": 3.757708251953125
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.757708251953125,
+                      "end": 3.943708251953125
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.943708251953125,
+                      "end": 4.059708251953125
+                    },
+                    {
+                      "word": "today?",
+                      "start": 4.059708251953125,
+                      "end": 4.593708251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want cancel my all booked department.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 5.9429996,
+                      "end": 6.183
+                    },
+                    {
+                      "word": "want ",
+                      "start": 6.183,
+                      "end": 6.343
+                    },
+                    {
+                      "word": "cancel ",
+                      "start": 6.503,
+                      "end": 7.063
+                    },
+                    {
+                      "word": "my ",
+                      "start": 7.063,
+                      "end": 7.543
+                    },
+                    {
+                      "word": "all ",
+                      "start": 7.543,
+                      "end": 7.9430000000000005
+                    },
+                    {
+                      "word": "booked ",
+                      "start": 7.9430000000000005,
+                      "end": 8.423
+                    },
+                    {
+                      "word": "department.",
+                      "start": 8.423,
+                      "end": 8.822999999999999
+                    }
+                  ]
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "e47c6cc9d6b11090",
+                  "name": "Check_Booked_Slots",
+                  "arguments": "{\"phone\":\"+12498005904\",\"clientId\":\"LuminaMedSpaOakville\",\"execution_message\":\"Let me check your booked slot, Please hold on.\"}"
+                },
+                {
+                  "role": "tool_call_result",
+                  "tool_call_id": "e47c6cc9d6b11090",
+                  "content": "[{\"startTime\":\"2025-09-24 14:00:00\",\"endTime\":\"2025-09-24 15:00:00\"},{\"startTime\":\"2025-09-24 17:00:00\",\"endTime\":\"2025-09-24 18:00:00\"}]"
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me check your booked slot, Please hold on.I found the following appointments under your name:  \n1. September 24, 2025, from 2:00 ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 13.399,
+                      "end": 13.538
+                    },
+                    {
+                      "word": "me ",
+                      "start": 13.538,
+                      "end": 13.62
+                    },
+                    {
+                      "word": "check ",
+                      "start": 13.62,
+                      "end": 13.817
+                    },
+                    {
+                      "word": "your ",
+                      "start": 13.817,
+                      "end": 13.945
+                    },
+                    {
+                      "word": "booked ",
+                      "start": 13.945,
+                      "end": 14.165
+                    },
+                    {
+                      "word": "slot, ",
+                      "start": 14.165,
+                      "end": 14.583
+                    },
+                    {
+                      "word": "Please ",
+                      "start": 14.583,
+                      "end": 15.001
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 15.001,
+                      "end": 15.373
+                    },
+                    {
+                      "word": "on.",
+                      "start": 15.373,
+                      "end": 15.988
+                    },
+                    {
+                      "word": "I ",
+                      "start": 16.011083251953124,
+                      "end": 16.174083251953125
+                    },
+                    {
+                      "word": "found ",
+                      "start": 16.174083251953125,
+                      "end": 16.360083251953125
+                    },
+                    {
+                      "word": "the ",
+                      "start": 16.360083251953125,
+                      "end": 16.452083251953123
+                    },
+                    {
+                      "word": "following ",
+                      "start": 16.452083251953123,
+                      "end": 16.812083251953126
+                    },
+                    {
+                      "word": "appointments ",
+                      "start": 16.812083251953126,
+                      "end": 17.300083251953126
+                    },
+                    {
+                      "word": "under ",
+                      "start": 17.300083251953126,
+                      "end": 17.602083251953125
+                    },
+                    {
+                      "word": "your ",
+                      "start": 17.602083251953125,
+                      "end": 17.846083251953125
+                    },
+                    {
+                      "word": "name: ",
+                      "start": 17.846083251953125,
+                      "end": 18.565083251953126
+                    },
+                    {
+                      "word": " \n1. ",
+                      "start": 18.565083251953126,
+                      "end": 19.192083251953125
+                    },
+                    {
+                      "word": "September ",
+                      "start": 19.204458251953124,
+                      "end": 19.749458251953126
+                    },
+                    {
+                      "word": "24, ",
+                      "start": 19.749458251953126,
+                      "end": 20.040458251953126
+                    },
+                    {
+                      "word": "2025, ",
+                      "start": 20.040458251953126,
+                      "end": 20.516458251953125
+                    },
+                    {
+                      "word": "from ",
+                      "start": 20.516458251953125,
+                      "end": 20.922458251953124
+                    },
+                    {
+                      "word": "2:00 ",
+                      "start": 20.922458251953124,
+                      "end": 21.224458251953124
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 1
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Go ",
+                  "words": [
+                    {
+                      "word": "Go ",
+                      "start": 21.823,
+                      "end": 22.303
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "PM to ",
+                  "words": [
+                    {
+                      "word": "PM ",
+                      "start": 21.224458251953124,
+                      "end": 22.094458251953125
+                    },
+                    {
+                      "word": "to ",
+                      "start": 22.094458251953125,
+                      "end": 22.385458251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 1
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "ahead.",
+                  "words": [
+                    {
+                      "word": "ahead.",
+                      "start": 22.303,
+                      "end": 22.622999999999998
+                    }
+                  ]
+                },
+                {
+                  "role": "user",
+                  "content": "Go ahead and cancel all appointments.",
+                  "words": [
+                    {
+                      "word": "Go ",
+                      "start": 23.403,
+                      "end": 23.883
+                    },
+                    {
+                      "word": "ahead ",
+                      "start": 23.883,
+                      "end": 24.282999999999998
+                    },
+                    {
+                      "word": "and ",
+                      "start": 24.282999999999998,
+                      "end": 24.683001
+                    },
+                    {
+                      "word": "cancel ",
+                      "start": 25.463,
+                      "end": 26.343
+                    },
+                    {
+                      "word": "all ",
+                      "start": 27.143,
+                      "end": 27.463
+                    },
+                    {
+                      "word": "appointments.",
+                      "start": 27.463,
+                      "end": 27.942999999999998
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "I am cancelling your appointments, ",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 29.812,
+                      "end": 29.905
+                    },
+                    {
+                      "word": "am ",
+                      "start": 29.905,
+                      "end": 30.055
+                    },
+                    {
+                      "word": "cancelling ",
+                      "start": 30.055,
+                      "end": 30.45
+                    },
+                    {
+                      "word": "your ",
+                      "start": 30.45,
+                      "end": 30.578
+                    },
+                    {
+                      "word": "appointments, ",
+                      "start": 30.578,
+                      "end": 31.054
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 7
+                  }
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "7af1c851ea7e344b",
+                  "name": "Cancel_Booked_Slots",
+                  "arguments": "{\"phone\": \"+12498005904\", \"targetStart\": \"2025-09-24 14:00:00\", \"clientId\": \"LuminaMedSpaOakville\", \"execution_message\": \"I am cancelling please hold.\"}"
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "1c285970feeafe5c",
+                  "name": "Cancel_Booked_Slots",
+                  "arguments": "{\"phone\": \"+12498005904\", \"targetStart\": \"2025-09-24 17:00:00\", \"clientId\": \"LuminaMedSpaOakville\", \"execution_message\": \"I am cancelling please hold.\"}"
+                }
+              ],
+              "public_log_url": "https://dxc03zgurdly9.cloudfront.net/8bcc4d2ffcb8d956070179469417aa511c849f1d077f87411a90ee5987d46385/public.log",
+              "latency": {},
+              "call_cost": {
+                "product_costs": [],
+                "total_duration_seconds": 0,
+                "total_duration_unit_price": 0,
+                "combined_cost": 0
+              },
+              "opt_out_sensitive_data_storage": false,
+              "data_storage_setting": "everything",
+              "opt_in_signed_url": false,
+              "from_number": "+12498005904",
+              "to_number": "+14374945352",
+              "direction": "inbound",
+              "telephony_identifier": {
+                "twilio_call_sid": "CA3fbf60d1e5dd0917f381e19802e73a28"
+              }
+            },
+            "name": "Cancel_Booked_Slots",
+            "args": {
+              "phone": "+12498005904",
+              "targetStart": "2025-09-24 17:00:00",
+              "clientId": "LuminaMedSpaOakville"
+            }
+          },
+          "webhookUrl": "https://n8n.srv899746.hstgr.cloud/webhook/g_cancel_booking",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "clientCredentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Filter bookings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clientCredentials": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter bookings": {
+      "main": [
+        [
+          {
+            "node": "search booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search booking": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Google Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Event Found": {
+      "main": [
+        [
+          {
+            "node": "Delete Google Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Event Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Matching Event": {
+      "main": [
+        [
+          {
+            "node": "If Event Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Google Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Filter Matching Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Client Found": {
+      "main": [
+        [
+          {
+            "node": "Find Google Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Client Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If Client Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an SMS/MMS/WhatsApp message": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an SMS/MMS/WhatsApp message1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an SMS/MMS/WhatsApp message2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Etc/UTC",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "96ed7e42-b9a8-4c2f-8033-09a0e3ff87ed",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a23a5a36084a4adf4da38e7db159b4442d0f7fa26992b909bde4e7462f866101"
+  },
+  "id": "qLDDVFhJAlVrsQrG",
+  "tags": []
+}

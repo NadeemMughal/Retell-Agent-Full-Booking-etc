@@ -1,0 +1,2011 @@
+{
+  "name": "g_availability",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "client",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "={{ $('Webhook').item.json.body.args.clientId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2240,
+        1264
+      ],
+      "id": "6c0af5bd-b10c-48e7-a40e-43a61c9b3b24",
+      "name": "Get a row",
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.squareup.com/v2/bookings/availability/search",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('Get a row').item.json.crm_api_key }}\"\n}\n ",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {\n    \"filter\": {\n      \"start_at_range\": {\n        \"start_at\": \"{{ $('Webhook').item.json.body.args.start_at }}\",\n        \"end_at\": \"{{ $('Webhook').item.json.body.args.end_at }}\"\n      },\n      \"location_id\": \"{{ $('Get Client from Supabase').item.json.locations }}\",\n      \"segment_filters\": [\n        {\n          \"service_variation_id\": \"{{ $json.variations[0].id }}\"\n        }\n      ]\n    }\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1136,
+        1072
+      ],
+      "id": "6c8c520a-dd2b-4a82-bcec-4c71edf00416",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.squareup.com/v2/catalog/search-catalog-items",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $json.crm_api_key }}\"\n}\n ",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"product_types\": [\"APPOINTMENTS_SERVICE\"],\n  \"limit\": 100\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1808,
+        1168
+      ],
+      "id": "5a53d807-5e02-4724-aa08-adbd3459f611",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.items;\nconst targetName = $('Webhook').first().json.body.args.Service_name; // Change this to your dynamic or static item name\n\n// Find the item matching the target name\nconst matchedItem = items.find(item => item.item_data.name === targetName);\n\n// Return variations if item found, else return a message\nif (matchedItem) {\n  return [{ json: { variations: matchedItem.item_data.variations } }];\n} else {\n  return [{ json: { message: `No item found with name \"${targetName}\"` } }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        1168
+      ],
+      "id": "e6fb34da-7033-49e5-b7b5-232bf8ae64a0",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a45e2734-a30c-442c-baed-8f85768e77b0",
+              "leftValue": "={{ $json.message }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1360,
+        1168
+      ],
+      "id": "c15dcba1-5c67-4daf-b41a-48b1bf10460f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1136,
+        1264
+      ],
+      "id": "d09768ea-edca-4bab-b2da-6b9e72327b91",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reference the HTTP node's output (replace 'HTTP' with your HTTP node's name)\nconst item = $('HTTP Request').first();\n\nif (!item || !item.json) {\n  return [{ json: { error: \"No input data or invalid structure from HTTP node\" } }];\n}\n\nconst response = item.json;\nconst availabilities = Array.isArray(response.availabilities) ? response.availabilities : [];\n\nreturn availabilities.map(item => ({\n  json: {\n    start_at: item.start_at || null // Fallback to null if start_at is missing\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        1168
+      ],
+      "id": "784481f9-f558-4b85-b8de-3a4cf5d7bbc9",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "44b9e291-7640-4b13-9426-5dbba265a6eb",
+              "leftValue": "={{ $json.client_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2016,
+        1264
+      ],
+      "id": "e479b636-7a51-48dd-976a-e6f593da7af7",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c9074f28-caec-4952-9c33-6c173f3664a9",
+              "name": "message",
+              "value": "Client Not Exists",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1808,
+        1360
+      ],
+      "id": "60d73195-1bd4-43ae-b82f-849b84401683",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const startAt = new Date($('Webhook').first().json.body.args.start_at);\nconst endAt = new Date($('Webhook').first().json.body.args.end_at);\nconst now = new Date(); // Current time in UTC\n\nconst isNowAfterOrEqualStart = now <= startAt;\nconst isNowWithinRange = now <= startAt && now <= endAt;\n\nreturn [\n  {\n    json: {\n      startAt,\n      endAt,\n      currentTime: now,\n      isNowAfterOrEqualStart,\n      isNowWithinRange\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        1360
+      ],
+      "id": "24beeaf8-c112-4101-bb24-d10be84c53cb",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "035ca580-aaaf-4db1-b937-45bf31ab1652",
+              "leftValue": "={{ $json.isNowAfterOrEqualStart }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "abc45ed2-0fae-49a1-879b-8a0a4ab2dff3",
+              "leftValue": "={{ $json.isNowWithinRange }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2464,
+        1360
+      ],
+      "id": "471ae428-389b-4630-b679-30c47c514d8c",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ef0cb387-4a08-4ff2-98f9-cd2d82e1284a",
+              "name": "message",
+              "value": "Time is Wrong",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1808,
+        1568
+      ],
+      "id": "f7115eab-070d-4a2d-89a3-d3bc37d4e6f7",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1584,
+        1472
+      ],
+      "id": "5feb699a-2b59-40fd-b799-96bc7ea6eead",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the first item from the input\nconst item = $input.first();\n\nif (!item || !item.json) {\n  return [{ json: { isEmpty: true, error: \"No input data or invalid structure\" } }];\n}\n\n// Check if availabilities is an array and empty\nif (Array.isArray(item.json.availabilities)) {\n  if (item.json.availabilities.length === 0) {\n    return [{ json: { isEmpty: true } }]; // availabilities is empty\n  } else {\n    return [{ json: { isEmpty: false } }]; // availabilities is not empty\n  }\n} else {\n  return [{ json: { isEmpty: true, error: \"availabilities is not an array\" } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        1072
+      ],
+      "id": "c764ad74-d212-4513-b3d0-d4d554e86ff7",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e2ff4796-236f-41bc-964d-c3f81f2eca96",
+              "leftValue": "={{ $json.isEmpty }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -704,
+        1072
+      ],
+      "id": "08891d5a-2842-42e5-9f0b-135609b9e68f",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1475a5ee-d9ff-414f-a73f-fa14ad9203cf",
+              "name": "message",
+              "value": "No Slot Available",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        960
+      ],
+      "id": "bb396ff0-5df4-4c79-9397-026d0d4cecc6",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -256,
+        1072
+      ],
+      "id": "af4330c3-a49b-488e-a21e-3c29d4c82fea",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "41571fd9-9961-46f3-a386-c154836883f9",
+              "leftValue": "={{ $json.crm_type }}",
+              "rightValue": "NULL",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3120,
+        1264
+      ],
+      "id": "c34dd219-9cb1-4dc7-a5cd-50efea85f517",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "g_availability",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -3568,
+        1264
+      ],
+      "id": "c52b923a-7720-4446-b663-69a3d3592134",
+      "name": "Webhook",
+      "webhookId": "3d231cfe-f9f2-47e0-9e6b-e955a31e33aa"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "Square",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "17fab301-423c-417d-9c86-5c7651b728e8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Square"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "2e78ca38-c1d3-4099-833b-39482d44d57f",
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "ghl",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "GoHighLevel"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2896,
+        1360
+      ],
+      "id": "df0c0259-6be2-4b49-88c8-434ec3e6e501",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the original request body from the webhook trigger node\nconst webhookBody = $('Webhook').first().json.body;\n\n// Get the response from the Supabase node\nconst supabaseResponse = $('Get Client from Supabase').first().json;\n\n// Check if Supabase returned a valid calendar_id\nif (!supabaseResponse || !supabaseResponse.calendar_id) {\n  throw new Error(`Could not find a calendar for the provided clientId: ${webhookBody.args.clientId}`);\n}\n\n// Get the calendar_id from the Supabase response\nconst calendarId = supabaseResponse.calendar_id;\n\n// Extract args\nconst {\n  duration: rawDuration,\n  workingHours: rawWorkingHours,\n  timeMin: rawTimeMin,\n  timeMax: rawTimeMax\n} = webhookBody.args;\n\n// Set defaults\nconst duration = parseInt(rawDuration, 10) || 30;\nconst workingHours = rawWorkingHours || { start: 9, end: 17 };\n\n// If webhook provided timeMin/Max → use them\nlet timeMin, timeMax;\n\nif (rawTimeMin && rawTimeMax) {\n  timeMin = new Date(rawTimeMin).toISOString();\n  timeMax = new Date(rawTimeMax).toISOString();\n} else {\n  // Otherwise use workingHours to create 1-hour window today\n  const today = new Date();\n\n  const start = new Date(today);\n  start.setHours(workingHours.start, 0, 0, 0);\n\n  const end = new Date(today);\n  end.setHours(workingHours.end, 0, 0, 0);\n\n  timeMin = start.toISOString();\n  timeMax = end.toISOString();\n}\n\n// Return all processed data\nreturn {\n  calendarId,\n  duration,\n  workingHours,\n  timeMin,\n  timeMax\n};\n"
+      },
+      "name": "Process Input & Set Time Range",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1920,
+        624
+      ],
+      "id": "7a0f0574-d424-4af5-bea3-79bff0f4bdc3"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('Process Input & Set Time Range').item.json.calendarId }}",
+          "mode": "id"
+        },
+        "eventId": "=",
+        "options": {}
+      },
+      "name": "Google Calendar - Get Busy Slots",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -1488,
+        624
+      ],
+      "id": "d94ad65c-7c5f-4437-adf6-5217ebae8ee1",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OgBzpLjgpwAE07vo",
+          "name": "projects.metaviz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the list of events from the 'items' array of the input.\nconst events = $input.first().json.items || [];\n// Get the data prepared by our first code node\nconst { duration, workingHours } = $('Code4').first().json;\n\n// From the events, create a simple array of busy start/end times.\nconst busySlots = events.map(event => ({\n  start: event.start.dateTime,\n  end: event.end.dateTime\n}));\n\n// --- Configuration ---\nconst slotCheckInterval = 15; // Check for a new slot every 15 minutes\n// ---------------------\n\nconst availableSlots = [];\n\nfor (let i = 0; i < 2; i++) { // Loop for today and tomorrow\n  const day = new Date();\n  day.setDate(day.getDate() + i);\n\n  let slotStart = new Date(day);\n  slotStart.setHours(workingHours.start, 0, 0, 0);\n\n  const endOfDay = new Date(day);\n  endOfDay.setHours(workingHours.end, 0, 0, 0);\n\n  while (slotStart.getTime() < endOfDay.getTime()) {\n    const slotEnd = new Date(slotStart.getTime() + duration * 60000);\n\n    if (slotEnd.getTime() > endOfDay.getTime()) {\n      break;\n    }\n\n    let isAvailable = true;\n    for (const busy of busySlots) {\n      if (!busy.start || !busy.end) continue;\n      const busyStart = new Date(busy.start);\n      const busyEnd = new Date(busy.end);\n\n      if (slotStart < busyEnd && slotEnd > busyStart) {\n        isAvailable = false;\n        break;\n      }\n    }\n\n    if (isAvailable) {\n      // Here we create the 'starttime'/'endtime' format you want\n      availableSlots.push({\n        starttime: slotStart.toISOString(),\n        endtime: slotEnd.toISOString(),\n      });\n    }\n\n    slotStart.setMinutes(slotStart.getMinutes() + slotCheckInterval);\n  }\n}\n\n// This final line ensures ONLY the list of available slots is returned\nreturn { availableSlots };"
+      },
+      "name": "Calculate Available Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1264,
+        624
+      ],
+      "id": "deb726a6-392b-4919-a991-3b5cddcb94c1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('Calculate Available Slots').item.json }}",
+        "options": {}
+      },
+      "name": "Respond with Available Slots",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1040,
+        624
+      ],
+      "id": "b2fc368a-fcb1-4682-8778-aa51da437460"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the input data (the JSON array you provided)\nconst inputData = $input.all();\n\n// Get the timezone offset from the Supabase node\n// Replace \"Supabase\" with the actual name of your Supabase node in the workflow\nconst supabaseData = $node[\"Get Client from Supabase\"].json;\n\n// Assuming the Supabase node returns an array with the Time_Zone field (e.g., \"-04:00\")\n\nconst timezoneOffset = $('Get Client from Supabase').first().json.Time_Zone || \"00:00\"; // Fallback to \"00:00\" if not found\n\n// Function to parse timezone offset to hours (e.g., \"-04:00\" -> -4, \"+04:00\" -> 4)\nfunction parseTimezoneOffset(offset) {\n  const sign = offset.startsWith(\"-\") ? -1 : 1;\n  const [hours, minutes] = offset.replace(/^[+-]/, \"\").split(\":\").map(Number);\n  return sign * (hours + minutes / 60);\n}\n\n// Flip the sign of the timezone offset\nconst offsetHours = parseTimezoneOffset(timezoneOffset) * -1;\n\n// Process the input data to adjust workingHours\nconst output = inputData.map(item => {\n  const workingHours = item.json.workingHours;\n  return {\n    ...item.json, // Spread the existing fields\n    workingHours: {\n      start: workingHours.start + offsetHours,\n      end: workingHours.end + offsetHours\n    }\n  };\n});\n\n// Return the modified data\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        624
+      ],
+      "id": "cc656817-97c5-4957-8f88-5894f4320926",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "client",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "={{ $json.body.args.clientId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -3344,
+        1264
+      ],
+      "id": "1f99aab7-9244-4f54-96ad-439c5afac6d1",
+      "name": "Get Client from Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if crm_api_key exists and is not undefined or \"undefined\"\nif (!$json[\"crm_api_key\"] || $json[\"crm_api_key\"] === \"undefined\") {\n  return [{ json: { error: \"crm_api_key is undefined or missing\" } }];\n}\n\ntry {\n  // Parse the crm_api_key field (it's a JSON string with an array inside)\n  const crmApiKey = JSON.parse($json[\"crm_api_key\"]);\n\n  // Check if crmApiKey is an array and has at least one element\n  if (!Array.isArray(crmApiKey) || crmApiKey.length === 0) {\n    return [{ json: { error: \"crm_api_key is not a valid array or is empty\" } }];\n  }\n\n  // The first element of the array is the response object\n  const response = crmApiKey[0];\n\n  // Return the parsed response with access_token, refresh_token, etc.\n  return [{ json: response }];\n} catch (error) {\n  // Return error details for debugging\n  return [{ json: { error: \"Failed to parse JSON\", details: error.message } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2656,
+        1920
+      ],
+      "id": "b3f4d2bd-89fb-4f41-abeb-27fbbb4d0cb2",
+      "name": "Code5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// If your Code node is set to \"Run Once for Each Item\"\n\nconst startISO = $(\"Webhook\").first().json.body.args.starttime;\nconst endISO   = $(\"Webhook\").first().json.body.args.endtime;\n\nconst startTimeMs = new Date(startISO).getTime();\nconst endTimeMs   = new Date(endISO).getTime();\n\nreturn [\n  {\n    json: {\n      startTimeMs,\n      endTimeMs\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2448,
+        1920
+      ],
+      "id": "f789ca08-ab3b-4a7a-85d4-f66eea07ff5f",
+      "name": "Code6"
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/calendars/{{$('Get Client from Supabase').item.json.calendar_id}}/free-slots?startDate={{ $json.startTimeMs }}&endDate={{ $json.endTimeMs }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$('Code5').item.json.access_token}}"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2128,
+        1952
+      ],
+      "id": "773a767e-58fb-4aaa-923b-21abd5c387a0",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input\nconst items = $input.all();\n\nlet results = [];\n\nfor (const item of items) {\n  // Loop through all keys in the object (dates)\n  for (const [key, value] of Object.entries(item.json)) {\n    if (value && value.slots) {\n      for (const slot of value.slots) {\n        results.push({\n          json: {\n            slot\n          }\n        });\n      }\n    }\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1904,
+        1952
+      ],
+      "id": "21d1fb9c-7eb4-4079-9010-bf510a101ee5",
+      "name": "Code7"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1680,
+        1952
+      ],
+      "id": "933c799f-8986-4319-9b17-831e1952a845",
+      "name": "Respond to Webhook3"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv899746.hstgr.cloud",
+            "user-agent": "axios/1.11.0",
+            "content-length": "12063",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "100.20.5.228",
+            "x-forwarded-host": "n8n.srv899746.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "1f699411ba4c",
+            "x-real-ip": "100.20.5.228",
+            "x-retell-signature": "v=1758611927738,d=0b6d160efbbb9e16d5778e49b5020510b5137f5b07a2759de67251f3730e3d86"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "call": {
+              "call_id": "call_55b8a099c28c13f4f1134d89e9c",
+              "call_type": "phone_call",
+              "agent_id": "agent_d03e516aafa795fab7a6a9774f",
+              "agent_version": 0,
+              "agent_name": "GC-AlderAshToronto (Restaurant)",
+              "retell_llm_dynamic_variables": {
+                "twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "twilio-callsid": "CAac77cf60ddc3cc4e76823318f84fc03e",
+                "first_name": "John",
+                "last_name": "Doe",
+                "customer_email": "",
+                "customer_id": "c0d4e9a1-3040-4995-855f-3b0fc001aa8d",
+                "preferred_service": "",
+                "preferred_time_slot": "",
+                "total_visits": "",
+                "total_spent": "",
+                "last_visit_date": "",
+                "customer_notes": "",
+                "account_status": "active",
+                "customer_status": "existing"
+              },
+              "custom_sip_headers": {
+                "x-twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "x-twilio-callsid": "CAac77cf60ddc3cc4e76823318f84fc03e"
+              },
+              "call_status": "ongoing",
+              "start_timestamp": 1758611888706,
+              "transcript": "Agent: Hi John Doe, AlderAsh Toronto here! How can I help you today?\nUser: I want one moment.\nAgent: Sure, take your time! Let me know when you're ready.\nUser: I want to book an appointment.\nAgent: Got it! How many people will be in your party?\nUser: Six.\nAgent: Okay, a table for 6 at our Toronto location. Does that sound good?\nUser: Yeah.\nAgent: Great! When were you hoping to come in?\nUser: I want to visit Wednesday at six PM.\n",
+              "transcript_object": [
+                {
+                  "role": "agent",
+                  "content": "Hi John Doe, AlderAsh Toronto here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi ",
+                      "start": 1.707,
+                      "end": 1.905
+                    },
+                    {
+                      "word": "John ",
+                      "start": 1.905,
+                      "end": 2.079
+                    },
+                    {
+                      "word": "Doe, ",
+                      "start": 2.079,
+                      "end": 2.241
+                    },
+                    {
+                      "word": "AlderAsh ",
+                      "start": 2.241,
+                      "end": 2.636
+                    },
+                    {
+                      "word": "Toronto ",
+                      "start": 2.636,
+                      "end": 2.984
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.984,
+                      "end": 3.484
+                    },
+                    {
+                      "word": " How ",
+                      "start": 3.529583251953125,
+                      "end": 3.646583251953125
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.646583251953125,
+                      "end": 3.773583251953125
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.773583251953125,
+                      "end": 3.831583251953125
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.831583251953125,
+                      "end": 3.994583251953125
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.994583251953125,
+                      "end": 4.098583251953125
+                    },
+                    {
+                      "word": "today?",
+                      "start": 4.098583251953125,
+                      "end": 4.644583251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want one moment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 5.9549996,
+                      "end": 6.114999999999999
+                    },
+                    {
+                      "word": "want ",
+                      "start": 6.114999999999999,
+                      "end": 6.515
+                    },
+                    {
+                      "word": "one ",
+                      "start": 6.515,
+                      "end": 6.9149997
+                    },
+                    {
+                      "word": "moment.",
+                      "start": 6.9149997,
+                      "end": 7.154999999999999
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Sure, take your time! Let me know when you're ready.",
+                  "words": [
+                    {
+                      "word": "Sure, ",
+                      "start": 8.777,
+                      "end": 9.091
+                    },
+                    {
+                      "word": "take ",
+                      "start": 9.091,
+                      "end": 9.277
+                    },
+                    {
+                      "word": "your ",
+                      "start": 9.277,
+                      "end": 9.404
+                    },
+                    {
+                      "word": "time!",
+                      "start": 9.404,
+                      "end": 9.938
+                    },
+                    {
+                      "word": " Let ",
+                      "start": 9.984458251953125,
+                      "end": 10.147458251953125
+                    },
+                    {
+                      "word": "me ",
+                      "start": 10.147458251953125,
+                      "end": 10.228458251953125
+                    },
+                    {
+                      "word": "know ",
+                      "start": 10.228458251953125,
+                      "end": 10.344458251953125
+                    },
+                    {
+                      "word": "when ",
+                      "start": 10.344458251953125,
+                      "end": 10.460458251953124
+                    },
+                    {
+                      "word": "you're ",
+                      "start": 10.460458251953124,
+                      "end": 10.635458251953125
+                    },
+                    {
+                      "word": "ready.",
+                      "start": 10.635458251953125,
+                      "end": 11.192458251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 1
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to book an appointment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 12.035,
+                      "end": 12.435
+                    },
+                    {
+                      "word": "want ",
+                      "start": 12.435,
+                      "end": 12.754999999999999
+                    },
+                    {
+                      "word": "to ",
+                      "start": 12.754999999999999,
+                      "end": 12.915
+                    },
+                    {
+                      "word": "book ",
+                      "start": 12.915,
+                      "end": 13.075
+                    },
+                    {
+                      "word": "an ",
+                      "start": 13.075,
+                      "end": 13.155
+                    },
+                    {
+                      "word": "appointment.",
+                      "start": 13.155,
+                      "end": 13.395
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Got it! How many people will be in your party?",
+                  "words": [
+                    {
+                      "word": "Got ",
+                      "start": 15.007,
+                      "end": 15.263
+                    },
+                    {
+                      "word": "it!",
+                      "start": 15.263,
+                      "end": 15.518
+                    },
+                    {
+                      "word": " How ",
+                      "start": 15.564291748046875,
+                      "end": 15.727291748046875
+                    },
+                    {
+                      "word": "many ",
+                      "start": 15.727291748046875,
+                      "end": 15.866291748046875
+                    },
+                    {
+                      "word": "people ",
+                      "start": 15.866291748046875,
+                      "end": 16.122291748046877
+                    },
+                    {
+                      "word": "will ",
+                      "start": 16.122291748046877,
+                      "end": 16.284291748046876
+                    },
+                    {
+                      "word": "be ",
+                      "start": 16.284291748046876,
+                      "end": 16.377291748046876
+                    },
+                    {
+                      "word": "in ",
+                      "start": 16.377291748046876,
+                      "end": 16.458291748046875
+                    },
+                    {
+                      "word": "your ",
+                      "start": 16.458291748046875,
+                      "end": 16.598291748046876
+                    },
+                    {
+                      "word": "party?",
+                      "start": 16.598291748046876,
+                      "end": 17.190291748046874
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Six.",
+                  "words": [
+                    {
+                      "word": "Six.",
+                      "start": 18.395,
+                      "end": 19.035
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Okay, a table for 6 at our Toronto location. Does that sound good?",
+                  "words": [
+                    {
+                      "word": "Okay, ",
+                      "start": 21.057,
+                      "end": 21.278
+                    },
+                    {
+                      "word": "a ",
+                      "start": 21.278,
+                      "end": 21.359
+                    },
+                    {
+                      "word": "table ",
+                      "start": 21.359,
+                      "end": 21.626
+                    },
+                    {
+                      "word": "for ",
+                      "start": 21.626,
+                      "end": 21.777
+                    },
+                    {
+                      "word": "6 ",
+                      "start": 21.777,
+                      "end": 22.021
+                    },
+                    {
+                      "word": "at ",
+                      "start": 22.021,
+                      "end": 22.102
+                    },
+                    {
+                      "word": "our ",
+                      "start": 22.102,
+                      "end": 22.23
+                    },
+                    {
+                      "word": "Toronto ",
+                      "start": 22.23,
+                      "end": 22.613
+                    },
+                    {
+                      "word": "location.",
+                      "start": 22.613,
+                      "end": 23.414
+                    },
+                    {
+                      "word": " Does ",
+                      "start": 23.459875,
+                      "end": 23.610875
+                    },
+                    {
+                      "word": "that ",
+                      "start": 23.610875,
+                      "end": 23.750875
+                    },
+                    {
+                      "word": "sound ",
+                      "start": 23.750875,
+                      "end": 23.935875
+                    },
+                    {
+                      "word": "good?",
+                      "start": 23.935875,
+                      "end": 24.388875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 3
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 25.334999,
+                      "end": 25.654998
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Great! When were you hoping to come in?",
+                  "words": [
+                    {
+                      "word": "Great!",
+                      "start": 27.541,
+                      "end": 27.959
+                    },
+                    {
+                      "word": " When ",
+                      "start": 28.005416748046876,
+                      "end": 28.191416748046876
+                    },
+                    {
+                      "word": "were ",
+                      "start": 28.191416748046876,
+                      "end": 28.319416748046876
+                    },
+                    {
+                      "word": "you ",
+                      "start": 28.319416748046876,
+                      "end": 28.423416748046876
+                    },
+                    {
+                      "word": "hoping ",
+                      "start": 28.423416748046876,
+                      "end": 28.656416748046876
+                    },
+                    {
+                      "word": "to ",
+                      "start": 28.656416748046876,
+                      "end": 28.725416748046875
+                    },
+                    {
+                      "word": "come ",
+                      "start": 28.725416748046875,
+                      "end": 28.876416748046875
+                    },
+                    {
+                      "word": "in?",
+                      "start": 28.876416748046875,
+                      "end": 29.306416748046875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to visit Wednesday at six PM.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 33.275,
+                      "end": 33.515003
+                    },
+                    {
+                      "word": "want ",
+                      "start": 33.515003,
+                      "end": 33.915
+                    },
+                    {
+                      "word": "to ",
+                      "start": 33.915,
+                      "end": 34.075
+                    },
+                    {
+                      "word": "visit ",
+                      "start": 34.075,
+                      "end": 34.555
+                    },
+                    {
+                      "word": "Wednesday ",
+                      "start": 34.555,
+                      "end": 35.355002999999996
+                    },
+                    {
+                      "word": "at ",
+                      "start": 35.355002999999996,
+                      "end": 36.395
+                    },
+                    {
+                      "word": "six ",
+                      "start": 36.395,
+                      "end": 36.875
+                    },
+                    {
+                      "word": "PM.",
+                      "start": 36.875,
+                      "end": 37.275
+                    }
+                  ]
+                }
+              ],
+              "transcript_with_tool_calls": [
+                {
+                  "role": "agent",
+                  "content": "Hi John Doe, AlderAsh Toronto here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi ",
+                      "start": 1.707,
+                      "end": 1.905
+                    },
+                    {
+                      "word": "John ",
+                      "start": 1.905,
+                      "end": 2.079
+                    },
+                    {
+                      "word": "Doe, ",
+                      "start": 2.079,
+                      "end": 2.241
+                    },
+                    {
+                      "word": "AlderAsh ",
+                      "start": 2.241,
+                      "end": 2.636
+                    },
+                    {
+                      "word": "Toronto ",
+                      "start": 2.636,
+                      "end": 2.984
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.984,
+                      "end": 3.484
+                    },
+                    {
+                      "word": " How ",
+                      "start": 3.529583251953125,
+                      "end": 3.646583251953125
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.646583251953125,
+                      "end": 3.773583251953125
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.773583251953125,
+                      "end": 3.831583251953125
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.831583251953125,
+                      "end": 3.994583251953125
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.994583251953125,
+                      "end": 4.098583251953125
+                    },
+                    {
+                      "word": "today?",
+                      "start": 4.098583251953125,
+                      "end": 4.644583251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want one moment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 5.9549996,
+                      "end": 6.114999999999999
+                    },
+                    {
+                      "word": "want ",
+                      "start": 6.114999999999999,
+                      "end": 6.515
+                    },
+                    {
+                      "word": "one ",
+                      "start": 6.515,
+                      "end": 6.9149997
+                    },
+                    {
+                      "word": "moment.",
+                      "start": 6.9149997,
+                      "end": 7.154999999999999
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Sure, take your time! Let me know when you're ready.",
+                  "words": [
+                    {
+                      "word": "Sure, ",
+                      "start": 8.777,
+                      "end": 9.091
+                    },
+                    {
+                      "word": "take ",
+                      "start": 9.091,
+                      "end": 9.277
+                    },
+                    {
+                      "word": "your ",
+                      "start": 9.277,
+                      "end": 9.404
+                    },
+                    {
+                      "word": "time!",
+                      "start": 9.404,
+                      "end": 9.938
+                    },
+                    {
+                      "word": " Let ",
+                      "start": 9.984458251953125,
+                      "end": 10.147458251953125
+                    },
+                    {
+                      "word": "me ",
+                      "start": 10.147458251953125,
+                      "end": 10.228458251953125
+                    },
+                    {
+                      "word": "know ",
+                      "start": 10.228458251953125,
+                      "end": 10.344458251953125
+                    },
+                    {
+                      "word": "when ",
+                      "start": 10.344458251953125,
+                      "end": 10.460458251953124
+                    },
+                    {
+                      "word": "you're ",
+                      "start": 10.460458251953124,
+                      "end": 10.635458251953125
+                    },
+                    {
+                      "word": "ready.",
+                      "start": 10.635458251953125,
+                      "end": 11.192458251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 1
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to book an appointment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 12.035,
+                      "end": 12.435
+                    },
+                    {
+                      "word": "want ",
+                      "start": 12.435,
+                      "end": 12.754999999999999
+                    },
+                    {
+                      "word": "to ",
+                      "start": 12.754999999999999,
+                      "end": 12.915
+                    },
+                    {
+                      "word": "book ",
+                      "start": 12.915,
+                      "end": 13.075
+                    },
+                    {
+                      "word": "an ",
+                      "start": 13.075,
+                      "end": 13.155
+                    },
+                    {
+                      "word": "appointment.",
+                      "start": 13.155,
+                      "end": 13.395
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Got it! How many people will be in your party?",
+                  "words": [
+                    {
+                      "word": "Got ",
+                      "start": 15.007,
+                      "end": 15.263
+                    },
+                    {
+                      "word": "it!",
+                      "start": 15.263,
+                      "end": 15.518
+                    },
+                    {
+                      "word": " How ",
+                      "start": 15.564291748046875,
+                      "end": 15.727291748046875
+                    },
+                    {
+                      "word": "many ",
+                      "start": 15.727291748046875,
+                      "end": 15.866291748046875
+                    },
+                    {
+                      "word": "people ",
+                      "start": 15.866291748046875,
+                      "end": 16.122291748046877
+                    },
+                    {
+                      "word": "will ",
+                      "start": 16.122291748046877,
+                      "end": 16.284291748046876
+                    },
+                    {
+                      "word": "be ",
+                      "start": 16.284291748046876,
+                      "end": 16.377291748046876
+                    },
+                    {
+                      "word": "in ",
+                      "start": 16.377291748046876,
+                      "end": 16.458291748046875
+                    },
+                    {
+                      "word": "your ",
+                      "start": 16.458291748046875,
+                      "end": 16.598291748046876
+                    },
+                    {
+                      "word": "party?",
+                      "start": 16.598291748046876,
+                      "end": 17.190291748046874
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Six.",
+                  "words": [
+                    {
+                      "word": "Six.",
+                      "start": 18.395,
+                      "end": 19.035
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Okay, a table for 6 at our Toronto location. Does that sound good?",
+                  "words": [
+                    {
+                      "word": "Okay, ",
+                      "start": 21.057,
+                      "end": 21.278
+                    },
+                    {
+                      "word": "a ",
+                      "start": 21.278,
+                      "end": 21.359
+                    },
+                    {
+                      "word": "table ",
+                      "start": 21.359,
+                      "end": 21.626
+                    },
+                    {
+                      "word": "for ",
+                      "start": 21.626,
+                      "end": 21.777
+                    },
+                    {
+                      "word": "6 ",
+                      "start": 21.777,
+                      "end": 22.021
+                    },
+                    {
+                      "word": "at ",
+                      "start": 22.021,
+                      "end": 22.102
+                    },
+                    {
+                      "word": "our ",
+                      "start": 22.102,
+                      "end": 22.23
+                    },
+                    {
+                      "word": "Toronto ",
+                      "start": 22.23,
+                      "end": 22.613
+                    },
+                    {
+                      "word": "location.",
+                      "start": 22.613,
+                      "end": 23.414
+                    },
+                    {
+                      "word": " Does ",
+                      "start": 23.459875,
+                      "end": 23.610875
+                    },
+                    {
+                      "word": "that ",
+                      "start": 23.610875,
+                      "end": 23.750875
+                    },
+                    {
+                      "word": "sound ",
+                      "start": 23.750875,
+                      "end": 23.935875
+                    },
+                    {
+                      "word": "good?",
+                      "start": 23.935875,
+                      "end": 24.388875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 3
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 25.334999,
+                      "end": 25.654998
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Great! When were you hoping to come in?",
+                  "words": [
+                    {
+                      "word": "Great!",
+                      "start": 27.541,
+                      "end": 27.959
+                    },
+                    {
+                      "word": " When ",
+                      "start": 28.005416748046876,
+                      "end": 28.191416748046876
+                    },
+                    {
+                      "word": "were ",
+                      "start": 28.191416748046876,
+                      "end": 28.319416748046876
+                    },
+                    {
+                      "word": "you ",
+                      "start": 28.319416748046876,
+                      "end": 28.423416748046876
+                    },
+                    {
+                      "word": "hoping ",
+                      "start": 28.423416748046876,
+                      "end": 28.656416748046876
+                    },
+                    {
+                      "word": "to ",
+                      "start": 28.656416748046876,
+                      "end": 28.725416748046875
+                    },
+                    {
+                      "word": "come ",
+                      "start": 28.725416748046875,
+                      "end": 28.876416748046875
+                    },
+                    {
+                      "word": "in?",
+                      "start": 28.876416748046875,
+                      "end": 29.306416748046875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to visit Wednesday at six PM.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 33.275,
+                      "end": 33.515003
+                    },
+                    {
+                      "word": "want ",
+                      "start": 33.515003,
+                      "end": 33.915
+                    },
+                    {
+                      "word": "to ",
+                      "start": 33.915,
+                      "end": 34.075
+                    },
+                    {
+                      "word": "visit ",
+                      "start": 34.075,
+                      "end": 34.555
+                    },
+                    {
+                      "word": "Wednesday ",
+                      "start": 34.555,
+                      "end": 35.355002999999996
+                    },
+                    {
+                      "word": "at ",
+                      "start": 35.355002999999996,
+                      "end": 36.395
+                    },
+                    {
+                      "word": "six ",
+                      "start": 36.395,
+                      "end": 36.875
+                    },
+                    {
+                      "word": "PM.",
+                      "start": 36.875,
+                      "end": 37.275
+                    }
+                  ]
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "82a59cb398e7d908",
+                  "name": "Availability_Google",
+                  "arguments": "{\"duration\":150,\"workingHours\":{\"start\":17,\"end\":22},\"clientId\":\"AlderAshToronto\",\"execution_message\":\"Let me check Availability for you Please hold on.\"}"
+                }
+              ],
+              "public_log_url": "https://dxc03zgurdly9.cloudfront.net/73eab35d19d2ef4b765ad4f854f515fec73ec4547a18bbffe629bd4a66114982/public.log",
+              "latency": {},
+              "call_cost": {
+                "product_costs": [],
+                "total_duration_seconds": 0,
+                "total_duration_unit_price": 0,
+                "combined_cost": 0
+              },
+              "opt_out_sensitive_data_storage": false,
+              "data_storage_setting": "everything",
+              "opt_in_signed_url": false,
+              "from_number": "+12498005904",
+              "to_number": "+16474925450",
+              "direction": "inbound",
+              "telephony_identifier": {
+                "twilio_call_sid": "CAac77cf60ddc3cc4e76823318f84fc03e"
+              }
+            },
+            "name": "Availability_Google",
+            "args": {
+              "duration": 150,
+              "workingHours": {
+                "start": 17,
+                "end": 22
+              },
+              "clientId": "AlderAshToronto"
+            }
+          },
+          "webhookUrl": "https://n8n.srv899746.hstgr.cloud/webhook/g_availability",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Process Input & Set Time Range",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Client from Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Input & Set Time Range": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Get Busy Slots": {
+      "main": [
+        [
+          {
+            "node": "Calculate Available Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Available Slots": {
+      "main": [
+        [
+          {
+            "node": "Respond with Available Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Get Busy Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Client from Supabase": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Code7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code7": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Etc/UTC",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "014aba11-3a8a-4374-ab9b-67cc39c75c48",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a23a5a36084a4adf4da38e7db159b4442d0f7fa26992b909bde4e7462f866101"
+  },
+  "id": "C0RicVuGs0IltPV7",
+  "tags": []
+}

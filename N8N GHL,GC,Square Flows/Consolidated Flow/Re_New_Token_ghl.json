@@ -1,0 +1,233 @@
+{
+  "name": "Re_New_Token_ghl",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 23
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        -64
+      ],
+      "id": "f19ea216-b15e-4dcb-ae2f-a2d341f8e75f",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "client",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "LuminaMedSpaOakville"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -64
+      ],
+      "id": "c4f28518-2101-4c22-91ba-270beb0e79ab",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get crm_api_key string from current item\nconst crmApiKeyStr = $json.crm_api_key;\n\n// If missing, handle gracefully\nif (!crmApiKeyStr) {\n  return [{ json: { error: \"crm_api_key is missing or undefined\" } }];\n}\n\n// Parse the crm_api_key (it's a stringified array)\nlet crmApiKey;\ntry {\n  crmApiKey = JSON.parse(crmApiKeyStr);\n} catch (e) {\n  return [{ json: { error: \"crm_api_key is not valid JSON\", raw: crmApiKeyStr } }];\n}\n\n// crmApiKey is now an array, take first element\nconst credentials = crmApiKey[0];\n\n// Return access_token, refresh_token, etc.\nreturn [{ json: credentials }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -64
+      ],
+      "id": "75e99226-1376-4be6-aaf6-af23bb048a42",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/oauth/token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"grant_type\": \"refresh_token\",\n  \"client_id\": \"689dbd29a5cf31f5fa60d06b-megpgn75\",\n  \"client_secret\": \"e1180740-32ae-4476-9f6f-9456f46e3ad1\",\n  \"refresh_token\": \"{{ $json.refresh_token }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        544,
+        -64
+      ],
+      "id": "da255c62-9e2d-4856-a8ac-1bb6ccc11b6a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "client",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "condition": "eq",
+              "keyValue": "LuminaMedSpaOakville"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "crm_api_key",
+              "fieldValue": "=[{{ $json.response }}]"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        -64
+      ],
+      "id": "15c76100-3d6a-41bb-9c37-ed89cc1aefa6",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      response: JSON.stringify(items[0].json)\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -64
+      ],
+      "id": "7b9087fe-c24d-49c4-ab06-088082430c68",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger1": [
+      {
+        "json": {
+          "timestamp": "2025-09-18T23:00:29.065+02:00",
+          "Readable date": "September 18th 2025, 11:00:29 pm",
+          "Readable time": "11:00:29 pm",
+          "Day of week": "Thursday",
+          "Year": "2025",
+          "Month": "September",
+          "Day of month": "18",
+          "Hour": "23",
+          "Minute": "00",
+          "Second": "29",
+          "Timezone": "Europe/Berlin (UTC+02:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "de8e7920-951d-426d-a0ae-5757d2b79149",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a23a5a36084a4adf4da38e7db159b4442d0f7fa26992b909bde4e7462f866101"
+  },
+  "id": "SIu1jyOAno6ufYEy",
+  "tags": []
+}

@@ -1,0 +1,172 @@
+{
+  "name": "Token_Generate_ghl",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "9e480088-ff18-4388-a077-ca0486c4da66",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "843de5bd-5f5b-4f1c-9e1f-190e9c229a59",
+      "name": "Webhook",
+      "webhookId": "9e480088-ff18-4388-a077-ca0486c4da66"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/oauth/token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"client_id\": \"689dbd29a5cf31f5fa60d06b-megpgn75\",\n  \"client_secret\": \"e1180740-32ae-4476-9f6f-9456f46e3ad1\",\n  \"grant_type\": \"authorization_code\",\n  \"code\": \"{{ $json.query.code }}\",\n  \"redirect_uri\": \"https://n8n.srv899746.hstgr.cloud/webhook/cbcb0439-8fe9-4bc3-a3d6-e4a24f48d745\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "f995f450-04a5-438e-8209-4127424beb1f",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      response: JSON.stringify(items[0].json)\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        0
+      ],
+      "id": "d0649551-2f03-4851-ad93-7cd03b9fd8ca",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = JSON.parse($json[\"response\"]);\nreturn [{ json: data }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        0
+      ],
+      "id": "d14d3d10-ee5c-4a9c-a7b4-afa2d62b6cdb",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv899746.hstgr.cloud",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:142.0) Gecko/20100101 Firefox/142.0",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "en-US,en;q=0.5",
+            "cookie": "rl_session=RudderEncrypt%3AU2FsdGVkX19i5uPYPCWdggbaqjOqi01vGdEkvFUAGLX6uTqlzaIOCZsyy2ujrJCBl8WVVryFdtAZcOFj%2FUvYxi%2BCamuWc4FDGnntiMFYcc%2FLMmiG35mGVwkrWiJbGHfZxuXSlWZGaAiBuP%2FEPPrkoQ%3D%3D; rl_anonymous_id=RudderEncrypt%3AU2FsdGVkX19FVOFklJZ%2BWi4TX7wTmrflrdHbTOerXH0DC%2BSHwEKQPkNQH76bMWvJ%2BneSdXXFjQ9E%2Bold%2FOZHIw%3D%3D; rl_page_init_referrer=RudderEncrypt%3AU2FsdGVkX18wOQlrtLojwYVFQYIkyHk4MZngub%2FtsWE%3D; rl_page_init_referring_domain=RudderEncrypt%3AU2FsdGVkX18upoPox8Jus8dolHNwI2Gzke%2BfABZptbk%3D; rl_user_id=RudderEncrypt%3AU2FsdGVkX19G9gIpS%2BzIHmpcu9f9xHbNoBaTbPkS2lMH7sk3zqKsB15%2FKNhAXOjUBm6zAaeUm9Yy3BUZwED11yiRBIN7%2B6GOwlnK%2FqJ8JWAi4ErqVKwhCS0DbkPiCGxauorPSSCnowK1XMoEFwZ312bsyLrBs7k2UDEwbc%2B2m94%3D; rl_trait=RudderEncrypt%3AU2FsdGVkX1%2B%2BXG5Rk2bdQaMpNB%2F7f9%2FGez2pDyYoBLB45n6%2FWB7kZT330fX%2BajsSDsj8%2BtOaZt%2B1wd2jkHxqnUBEGvXffSn04PxUsIKb6E%2FQQr7XoA3A1i%2F9%2BdMucdNXbO6mF54Ih6D0S1%2BIwhKawg%3D%3D; ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog=%7B%22distinct_id%22%3A%22a23a5a36084a4adf4da38e7db159b4442d0f7fa26992b909bde4e7462f866101%234b59eef6-ae24-4e8f-bec6-b1ef2acb0b72%22%2C%22%24sesid%22%3A%5B1755603288790%2C%220198c21c-42fc-79c5-b002-ffa53238092a%22%2C1755603288790%5D%2C%22%24epp%22%3Atrue%2C%22%24initial_person_info%22%3A%7B%22r%22%3A%22%24direct%22%2C%22u%22%3A%22https%3A%2F%2Fn8n.srv899746.hstgr.cloud%2Fsignin%3Fredirect%3D%25252Fworkflow%25252FeTeLV7yIYTFjwSxR%22%7D%7D",
+            "priority": "u=0, i",
+            "referer": "https://marketplace.gohighlevel.com/",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "cross-site",
+            "sec-fetch-user": "?1",
+            "te": "trailers",
+            "upgrade-insecure-requests": "1",
+            "x-forwarded-for": "119.156.102.212",
+            "x-forwarded-host": "n8n.srv899746.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "903fa36a6242",
+            "x-real-ip": "119.156.102.212"
+          },
+          "params": {},
+          "query": {
+            "code": "620a4350deb244542d881c3b6ec235ae3540cd91"
+          },
+          "body": {},
+          "webhookUrl": "https://n8n.srv899746.hstgr.cloud/webhook/9e480088-ff18-4388-a077-ca0486c4da66",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "HTTP Request": [
+      {
+        "json": {
+          "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRoQ2xhc3MiOiJMb2NhdGlvbiIsImF1dGhDbGFzc0lkIjoiYVQ5SGd0M2dDNnFjQmhuMm1aR2QiLCJzb3VyY2UiOiJJTlRFR1JBVElPTiIsInNvdXJjZUlkIjoiNjg5ZGJkMjlhNWNmMzFmNWZhNjBkMDZiLW1lZ3Bnbjc1IiwiY2hhbm5lbCI6Ik9BVVRIIiwicHJpbWFyeUF1dGhDbGFzc0lkIjoiYVQ5SGd0M2dDNnFjQmhuMm1aR2QiLCJvYXV0aE1ldGEiOnsic2NvcGVzIjpbImxvY2F0aW9ucy5yZWFkb25seSIsImNvbnRhY3RzLnJlYWRvbmx5IiwiY29udGFjdHMud3JpdGUiLCJvcHBvcnR1bml0aWVzLnJlYWRvbmx5Iiwib3Bwb3J0dW5pdGllcy53cml0ZSIsInVzZXJzLnJlYWRvbmx5IiwiY2FsZW5kYXJzLnJlYWRvbmx5IiwiY2FsZW5kYXJzLndyaXRlIiwiY2FsZW5kYXJzL2V2ZW50cy5yZWFkb25seSIsImNhbGVuZGFycy9ldmVudHMud3JpdGUiLCJjYWxlbmRhcnMvZ3JvdXBzLnJlYWRvbmx5IiwiY2FsZW5kYXJzL2dyb3Vwcy53cml0ZSIsImNhbGVuZGFycy9yZXNvdXJjZXMucmVhZG9ubHkiLCJjYWxlbmRhcnMvcmVzb3VyY2VzLndyaXRlIl0sImNsaWVudCI6IjY4OWRiZDI5YTVjZjMxZjVmYTYwZDA2YiIsInZlcnNpb25JZCI6IjY4OWRiZDI5YTVjZjMxZjVmYTYwZDA2YiIsImNsaWVudEtleSI6IjY4OWRiZDI5YTVjZjMxZjVmYTYwZDA2Yi1tZWdwZ243NSJ9LCJpYXQiOjE3NTYyNzIxNzkuMzYzLCJleHAiOjE3NTYzNTg1NzkuMzYzfQ.Z8x-ZVHiEVctaepaKrDOMxMSb_Fc8L6h8u24BdVZKdOLWIylEhCL9uDNPSVBTPod385LflVxeXlTnxtP46xgOEayj6_ox_bJxm_HOKUQicohfQV_fTnDS_k_QIewFzSE31Y6cty1CzCcLbo64xqH9hdxvrDfyfqgYGiNniAvlsxaoAWF3qAohNxVocD0dHO9km6k_TG-kBA33ju-HHJDBVZ2baLw2nK5Py4-jreDSbdowVRjdQnvCpc2aiLvOZ3AQEJhvW3BeJcht_bQd1DY56-GyXZughnaygNQqKPmW3_YfalfkFkipG1NS6gazbn6pbDjbKwDBOas9bnEYPJd8UWowBHxUid0Wo8KDi6jvKUFVSC1RZJOYdMujoJkTaYzWL5CsC0PRdyvCkans-X0mXKbklN8UW11brQHa-TfRtsOBdlR4ro8f48P_Occ1jqp6iwRHvCCdfFALFAHBDg8VDfksPIq7BLGmva4MNRWZ1vNGAYy5mRBlNvm0vZQRyOlJTsOSiEPwzGHxpwkCPZjp07eAkpuaba98pjwqGi3Lm06YA0ynSII8E8OD1tgAY8GMUNW92IOa2jWYVK-BFGfLcEOtDoZV6nQrr_ZGZSZG8Rm32PKdh6ImCkRUe4qCOJ5EZwEW7oputjZkkfxqploatpXQmHiZSTbrE_sTDc7gpY",
+          "token_type": "Bearer",
+          "expires_in": 86399,
+          "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRoQ2xhc3MiOiJMb2NhdGlvbiIsImF1dGhDbGFzc0lkIjoiYVQ5SGd0M2dDNnFjQmhuMm1aR2QiLCJzb3VyY2UiOiJJTlRFR1JBVElPTiIsInNvdXJjZUlkIjoiNjg5ZGJkMjlhNWNmMzFmNWZhNjBkMDZiLW1lZ3Bnbjc1IiwiY2hhbm5lbCI6Ik9BVVRIIiwicHJpbWFyeUF1dGhDbGFzc0lkIjoiYVQ5SGd0M2dDNnFjQmhuMm1aR2QiLCJvYXV0aE1ldGEiOnsic2NvcGVzIjpbImxvY2F0aW9ucy5yZWFkb25seSIsImNvbnRhY3RzLnJlYWRvbmx5IiwiY29udGFjdHMud3JpdGUiLCJvcHBvcnR1bml0aWVzLnJlYWRvbmx5Iiwib3Bwb3J0dW5pdGllcy53cml0ZSIsInVzZXJzLnJlYWRvbmx5IiwiY2FsZW5kYXJzLnJlYWRvbmx5IiwiY2FsZW5kYXJzLndyaXRlIiwiY2FsZW5kYXJzL2V2ZW50cy5yZWFkb25seSIsImNhbGVuZGFycy9ldmVudHMud3JpdGUiLCJjYWxlbmRhcnMvZ3JvdXBzLnJlYWRvbmx5IiwiY2FsZW5kYXJzL2dyb3Vwcy53cml0ZSIsImNhbGVuZGFycy9yZXNvdXJjZXMucmVhZG9ubHkiLCJjYWxlbmRhcnMvcmVzb3VyY2VzLndyaXRlIl0sImNsaWVudCI6IjY4OWRiZDI5YTVjZjMxZjVmYTYwZDA2YiIsInZlcnNpb25JZCI6IjY4OWRiZDI5YTVjZjMxZjVmYTYwZDA2YiIsImNsaWVudEtleSI6IjY4OWRiZDI5YTVjZjMxZjVmYTYwZDA2Yi1tZWdwZ243NSJ9LCJpYXQiOjE3NTYyNzIxNzkuMzcsImV4cCI6MTc4NzgwODE3OS4zNywidW5pcXVlSWQiOiI0M2JhNTQzNy1iNGVhLTQ3NjYtYjU2Zi01ZjViMzdlNWUzMzYiLCJ2IjoiMiJ9.C6ls7EsLzrclabJIY8MS_KcBHP6cZJBLMKHNOSnhgt7hWAbvQtZbHz2x34WOq0qeYiSpBQFFOAwmcD5KDQQdeEbejkLqy3acKjJuGmLUWWghIFObsYQWGk5DGGEPbIYVeJffsybOlH7DdvYhIGyW_rAh0omYLCNZTneK8gmcBlKNKssrrT-h5FyN6_hlH5YlcGjNESF6p5M_OIbBja_BHI_3Aoz2JDehiiXnZc-fVWOrbRG_o5RrisR_7SHeDtaVB8_VjDUJtNfdF4TprXB_HxXoJqrvax9Z2nTpFRLs34Eb_9N1-iTxHDKaf3TSXonO8DHRVRIqAQ7kfFJURvSry32qQdp-WRpaeXRdTuHQuPjCA6wTuJKqCXMWm7MxmDN83UBeESUgbORAIJExb_iOTtW_avjJvF6KW1Lih2xVyi4qm_l69CnGfw_gr_q1YQdezoyqtna8y3agl6HKopHhRHBEMKxtFK-NE5I4EWPYY-LV3GLXGH9iy8P0fDqpCUgGszx9YG1J_C9mkn7h1_cSFeAgjSNL5gYhIuONLjCZArUozyvO4L0SfyyGY9w41_nuYrlNuD5EWdZQvxahKez0dOJevmuwTDCng6pQ4vkT_dBll40yF8bzQDNnwf0m_9W49L1hR4wpRi1Zc4R6XNMiMbqMLRWs1wfDDCp1MahIAT4",
+          "scope": "locations.readonly contacts.readonly contacts.write opportunities.readonly opportunities.write users.readonly calendars.readonly calendars.write calendars/events.readonly calendars/events.write calendars/groups.readonly calendars/groups.write calendars/resources.readonly calendars/resources.write",
+          "refreshTokenId": "68ae9633f4e4a80391ecb1f9",
+          "userType": "Location",
+          "companyId": "B4l0LyphoTNuIWhMdGnz",
+          "locationId": "aT9Hgt3gC6qcBhn2mZGd",
+          "isBulkInstallation": false,
+          "userId": "bSw1AVM1thCwCvfB7BX1"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "eb114410-6708-4326-baef-00b13770f8e1",
+  "meta": {
+    "instanceId": "a23a5a36084a4adf4da38e7db159b4442d0f7fa26992b909bde4e7462f866101"
+  },
+  "id": "JPbeBKx5ROpjoEfr",
+  "tags": []
+}

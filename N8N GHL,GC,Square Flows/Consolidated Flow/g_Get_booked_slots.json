@@ -1,0 +1,995 @@
+{
+  "name": "g_Get_booked_slots",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "g_Get_booked_slots",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        -64
+      ],
+      "id": "291036cd-88aa-4c54-a95c-785788885987",
+      "name": "Webhook",
+      "webhookId": "bc204e56-503f-4f60-888f-7cb93a658626"
+    },
+    {
+      "parameters": {
+        "url": "https://connect.squareup.com/v2/bookings",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('Get a row1').item.json.crm_api_key }}\"\n}\n ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        512,
+        144
+      ],
+      "id": "9001ffac-e73f-4830-8623-cea9757adf4a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.squareup.com/v2/customers/search",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $json.crm_api_key }}\"\n}\n ",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {\n    \"filter\": {\n      \"phone_number\": {\n        \"fuzzy\": \"{{ $('Webhook').item.json.body.args.phone }}\"\n      }\n    }\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        144
+      ],
+      "id": "34401b4f-f5aa-4a73-ab21-82a41cbe3917",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data from the previous node (e.g., HTTP node)\nconst inputData = $input.all();\n\n// Assuming the input data is the provided JSON structure\nconst bookings = inputData[0].json.bookings;\n\n// Define the customer_id to filter by (you can modify this or pass it dynamically)\nconst customerId = $('HTTP Request1').first().json.customers[0].id; // Example customer ID\n\n// Filter bookings by customer_id\nconst matchedBookings = bookings.filter(booking => booking.customer_id === customerId);\n\n// Prepare the output in n8n format\nconst output = matchedBookings.map(booking => ({\n  json: booking\n}));\n\n// Return the output (or an empty array with a message if no bookings are found)\nif (output.length === 0) {\n  return [{\n    json: {\n      message: `No bookings found for customer ID: ${customerId}`\n    }\n  }];\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        144
+      ],
+      "id": "c64b9aa3-11ea-42b3-b43e-16617311193c",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data from the previous node\nconst inputData = $input.all();\n\n// Check if input data exists and is an array\nif (!inputData || !Array.isArray(inputData) || inputData.length === 0) {\n  return [{\n    json: {\n      message: \"No valid input data found\"\n    }\n  }];\n}\n\n// Extract start_at from each booking\nconst output = inputData\n  .filter(item => item.json && item.json.start_at) // Ensure item has json and start_at\n  .map(item => ({\n    json: {\n      start_at: item.json.start_at\n    }\n  }));\n\n// Handle case where no valid bookings are found\nif (output.length === 0) {\n  return [{\n    json: {\n      message: \"No bookings with start_at field found\"\n    }\n  }];\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        144
+      ],
+      "id": "af6f756f-59b1-42b9-a0ad-a132b94d43d2",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1696,
+        144
+      ],
+      "id": "64a1cdad-0c13-4814-aaf3-1a2dd06043e5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getAcceptedAppointments(appointments) {\n  return appointments.filter(appointment => appointment.status === \"ACCEPTED\");\n}\n\n// Get input items from n8n (assuming input is from the previous node)\nconst appointments = $input.all().map(item => item.json);\n\n// Filter for accepted appointments\nconst acceptedAppointments = getAcceptedAppointments(appointments);\n\n// Format output for n8n\nreturn acceptedAppointments.map(appointment => ({\n  json: appointment\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        144
+      ],
+      "id": "c696d4a4-82ee-4875-8fa1-9440c008bc47",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "There is no available booked slot",
+        "options": {}
+      },
+      "name": "Respond No Slots Found",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        512,
+        -64
+      ],
+      "id": "6a84e2c6-d1a2-4dc8-a0ef-34838c6a150b",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Respond with All Booked Slots",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1072,
+        -256
+      ],
+      "id": "8888e56e-19a1-4071-962a-288703bc9996"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data first\nconst inputData = $input.all();\n\n// Accept both camelCase and snake_case parameters\nconst args = $('Webhook').first().json.body.args || {};\nconst targetPhone = args.phone;\nconst firstName   = args.firstName   || args.first_name;\nconst lastName    = args.lastName    || args.last_name;\n\nconsole.log('Search params → phone:', targetPhone, 'name:', firstName, lastName);\n\n// Helpers\nconst normalizePhone = p => (p || '').replace(/\\D/g, '');\nconst normalizeText  = t => (t || '').toLowerCase().replace(/\\s+/g, '');\n\n// Gather events\nlet events = [];\nif (inputData?.length) {\n  const firstItem = inputData[0];\n  events = firstItem.json?.events\n        || firstItem.json?.items\n        || firstItem.json?.bookedSlots\n        || [];\n}\nif (events.length === 0) {\n  events = inputData\n    .filter(i => i.json && (i.json.summary || i.json.title))\n    .map(i => i.json);\n}\n\n// Build response & filter by phone OR names\nconst bookedSlots = events\n  .map(ev => ({\n    title:       ev.summary,\n    starttime:   ev.start?.dateTime || ev.start?.date,\n    endtime:     ev.end?.dateTime   || ev.end?.date,\n    description: ev.description || '',\n  }))\n  .filter(slot => {\n    const text = normalizeText(slot.description);\n\n    // Phone match\n    const phoneMatch = targetPhone\n      ? text.includes(normalizePhone(targetPhone))\n      : false;\n\n    // Name match (both first & last must appear somewhere, any order)\n    const nameMatch = firstName && lastName\n      ? text.includes(normalizeText(firstName)) &&\n        text.includes(normalizeText(lastName))\n      : false;\n\n    console.log('Match for', slot.title, { phoneMatch, nameMatch });\n    return phoneMatch || nameMatch;\n  });\n\nreturn [{ json: { bookedSlots } }];"
+      },
+      "name": "Format All Booked Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -256
+      ],
+      "id": "535b6801-91d3-442b-b645-8ddd30e00511",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $('Get All Calendar Events').all().length }}",
+              "operation": "larger"
+            }
+          ]
+        }
+      },
+      "name": "If Slots Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -160
+      ],
+      "id": "e7f0b8bd-84cb-439c-9f36-173d5d42438a"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $json.calendar_id }}",
+          "mode": "id"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "name": "Get All Calendar Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        64,
+        -160
+      ],
+      "id": "fcfb5427-4049-4083-b471-9c22ed175e4b",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OgBzpLjgpwAE07vo",
+          "name": "projects.metaviz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "client",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "={{ $json.body.args.clientId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -64
+      ],
+      "id": "041676b7-09a2-4545-92aa-38b4cc409dd2",
+      "name": "Get a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f4c56f2e-933c-42e7-a08c-2064450bfede",
+              "leftValue": "={{ $json.crm_type }}",
+              "rightValue": "NULL",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        -64
+      ],
+      "id": "ed6f3624-f18f-4f72-ba83-4da698922613",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "Square",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7a0af538-167c-4ba5-aa3c-9ab2912eea5e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Square"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "53fb6346-0874-46cf-8737-8e226741937f",
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "ghl",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "GoHighLevel"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        64,
+        144
+      ],
+      "id": "6a66aab8-3540-488e-a3a3-011c50e8569b",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\n\ndata.bookedSlots = data.bookedSlots.map(slot => ({\n  ...slot,\n  starttime: slot.starttime.replace(/[-+]\\d{2}:\\d{2}$/, \"\") + \"Z\",\n  endtime: slot.endtime.replace(/[-+]\\d{2}:\\d{2}$/, \"\") + \"Z\"\n}));\n\nreturn data;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -256
+      ],
+      "id": "1a678e42-b930-4258-9b11-51b659720e34",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "customers",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "keyValue": "={{ $('Webhook').item.json.body.args.phone }}"
+            },
+            {
+              "keyName": "agent_id",
+              "keyValue": "={{ $('Webhook').item.json.body.call.agent_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        528,
+        544
+      ],
+      "id": "d2fe95a0-3908-4caf-bf83-3871e739aa26",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{$json.Contact_id}}/appointments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$('Code4').item.json.access_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        544
+      ],
+      "id": "4355045a-e2b3-4889-8579-5ecf90f44a77",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if crm_api_key exists and is not undefined or \"undefined\"\nif (!$json[\"crm_api_key\"] || $json[\"crm_api_key\"] === \"undefined\") {\n  return [{ json: { error: \"crm_api_key is undefined or missing\" } }];\n}\n\ntry {\n  // Parse the crm_api_key field (it's a JSON string with an array inside)\n  const crmApiKey = JSON.parse($json[\"crm_api_key\"]);\n\n  // Check if crmApiKey is an array and has at least one element\n  if (!Array.isArray(crmApiKey) || crmApiKey.length === 0) {\n    return [{ json: { error: \"crm_api_key is not a valid array or is empty\" } }];\n  }\n\n  // The first element of the array is the response object\n  const response = crmApiKey[0];\n\n  // Return the parsed response with access_token, refresh_token, etc.\n  return [{ json: response }];\n} catch (error) {\n  // Return error details for debugging\n  return [{ json: { error: \"Failed to parse JSON\", details: error.message } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        544
+      ],
+      "id": "a563fcbf-af33-499e-af73-c9b0a4998da7",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data\nconst items = $input.all();\n\n// Extract all startTime and endTime\nlet results = [];\n\nfor (const item of items) {\n  const events = item.json.events || [];\n  for (const event of events) {\n    results.push({\n      json: {\n        startTime: event.startTime,\n        endTime: event.endTime\n      }\n    });\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        544
+      ],
+      "id": "fa3f04a5-a41c-4535-90ec-acf4d6020cfd",
+      "name": "Code5"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1232,
+        544
+      ],
+      "id": "854809a5-5fe0-4948-8185-55eb0dfb8f55",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst timezoneOffset = \"-04:00\";\n\nconst match = timezoneOffset.match(/([+-])(\\d{2}):(\\d{2})/);\nconst sign = match[1] === \"-\" ? -1 : 1;\nconst hours = parseInt(match[2], 10);\nconst minutes = parseInt(match[3], 10);\nconst offsetMinutes = sign * (hours * 60 + minutes);\n\nreturn items.map(item => {\n  const utcDate = new Date(item.json.start_at);\n  const localDate = new Date(utcDate.getTime() + offsetMinutes * 60000);\n\n  // Format without milliseconds\n  const localTime = localDate.toISOString().replace(\".000Z\", \"Z\");\n\n  return {\n    json: {\n      start_at: localTime,\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        144
+      ],
+      "id": "bb37f829-dd88-446a-9962-c1b761ef2a7a",
+      "name": "Code6"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv899746.hstgr.cloud",
+            "user-agent": "axios/1.11.0",
+            "content-length": "4162",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "100.20.5.228",
+            "x-forwarded-host": "n8n.srv899746.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "1f699411ba4c",
+            "x-real-ip": "100.20.5.228",
+            "x-retell-signature": "v=1758603785008,d=277861904d904c24196feabe5d89c2cf653e5c03bee08081e9caab8ae9eb3567"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "call": {
+              "call_id": "call_ed138e37a39617401372a08430f",
+              "call_type": "phone_call",
+              "agent_id": "agent_80a7e5ddade104137ac8aba68c",
+              "agent_version": 0,
+              "agent_name": "GHL-LuminaMedSpaOakville",
+              "retell_llm_dynamic_variables": {
+                "twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "twilio-callsid": "CA16a441e63353c0614ab7dc1ff953dd11",
+                "first_name": "Norman",
+                "last_name": "Javed",
+                "customer_email": "",
+                "customer_id": "78a5d1b5-04b2-4397-9488-f13a4a1eadb0",
+                "preferred_service": "",
+                "preferred_time_slot": "",
+                "total_visits": "",
+                "total_spent": "",
+                "last_visit_date": "",
+                "customer_notes": "",
+                "account_status": "active",
+                "customer_status": "existing"
+              },
+              "custom_sip_headers": {
+                "x-twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "x-twilio-callsid": "CA16a441e63353c0614ab7dc1ff953dd11"
+              },
+              "call_status": "ongoing",
+              "start_timestamp": 1758603772073,
+              "transcript": "Agent: Hi Norman Javed, Lumina MedSpa here! How can I help you today?\nUser: I want to reschedule my appointment.\n",
+              "transcript_object": [
+                {
+                  "role": "agent",
+                  "content": "Hi Norman Javed, Lumina MedSpa here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi ",
+                      "start": 1.096,
+                      "end": 1.259
+                    },
+                    {
+                      "word": "Norman ",
+                      "start": 1.259,
+                      "end": 1.468
+                    },
+                    {
+                      "word": "Javed, ",
+                      "start": 1.468,
+                      "end": 1.77
+                    },
+                    {
+                      "word": "Lumina ",
+                      "start": 1.77,
+                      "end": 2.072
+                    },
+                    {
+                      "word": "MedSpa ",
+                      "start": 2.072,
+                      "end": 2.431
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.431,
+                      "end": 2.919
+                    },
+                    {
+                      "word": " How ",
+                      "start": 2.965041748046875,
+                      "end": 3.105041748046875
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.105041748046875,
+                      "end": 3.244041748046875
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.244041748046875,
+                      "end": 3.325041748046875
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.325041748046875,
+                      "end": 3.499041748046875
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.499041748046875,
+                      "end": 3.604041748046875
+                    },
+                    {
+                      "word": "today?",
+                      "start": 3.604041748046875,
+                      "end": 4.219041748046875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to reschedule my appointment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 9.748000000000001,
+                      "end": 9.988
+                    },
+                    {
+                      "word": "want ",
+                      "start": 9.988,
+                      "end": 10.228
+                    },
+                    {
+                      "word": "to ",
+                      "start": 10.228,
+                      "end": 10.388
+                    },
+                    {
+                      "word": "reschedule ",
+                      "start": 10.388,
+                      "end": 10.788
+                    },
+                    {
+                      "word": "my ",
+                      "start": 10.788,
+                      "end": 11.108
+                    },
+                    {
+                      "word": "appointment.",
+                      "start": 11.108,
+                      "end": 11.427999
+                    }
+                  ]
+                }
+              ],
+              "transcript_with_tool_calls": [
+                {
+                  "role": "agent",
+                  "content": "Hi Norman Javed, Lumina MedSpa here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi ",
+                      "start": 1.096,
+                      "end": 1.259
+                    },
+                    {
+                      "word": "Norman ",
+                      "start": 1.259,
+                      "end": 1.468
+                    },
+                    {
+                      "word": "Javed, ",
+                      "start": 1.468,
+                      "end": 1.77
+                    },
+                    {
+                      "word": "Lumina ",
+                      "start": 1.77,
+                      "end": 2.072
+                    },
+                    {
+                      "word": "MedSpa ",
+                      "start": 2.072,
+                      "end": 2.431
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.431,
+                      "end": 2.919
+                    },
+                    {
+                      "word": " How ",
+                      "start": 2.965041748046875,
+                      "end": 3.105041748046875
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.105041748046875,
+                      "end": 3.244041748046875
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.244041748046875,
+                      "end": 3.325041748046875
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.325041748046875,
+                      "end": 3.499041748046875
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.499041748046875,
+                      "end": 3.604041748046875
+                    },
+                    {
+                      "word": "today?",
+                      "start": 3.604041748046875,
+                      "end": 4.219041748046875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to reschedule my appointment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 9.748000000000001,
+                      "end": 9.988
+                    },
+                    {
+                      "word": "want ",
+                      "start": 9.988,
+                      "end": 10.228
+                    },
+                    {
+                      "word": "to ",
+                      "start": 10.228,
+                      "end": 10.388
+                    },
+                    {
+                      "word": "reschedule ",
+                      "start": 10.388,
+                      "end": 10.788
+                    },
+                    {
+                      "word": "my ",
+                      "start": 10.788,
+                      "end": 11.108
+                    },
+                    {
+                      "word": "appointment.",
+                      "start": 11.108,
+                      "end": 11.427999
+                    }
+                  ]
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "e44167c5339b4e37",
+                  "name": "Check_Booked_Slots",
+                  "arguments": "{\"phone\":\"+12498005904\",\"clientId\":\"LuminaMedSpaOakville\",\"execution_message\":\"Let me check your booked slot, Please hold on.\"}"
+                }
+              ],
+              "public_log_url": "https://dxc03zgurdly9.cloudfront.net/27fdc67ce8882bb4c956971624f27c0997d3a414a50aedd830a108f96200ff7d/public.log",
+              "latency": {},
+              "call_cost": {
+                "product_costs": [],
+                "total_duration_seconds": 0,
+                "total_duration_unit_price": 0,
+                "combined_cost": 0
+              },
+              "opt_out_sensitive_data_storage": false,
+              "data_storage_setting": "everything",
+              "opt_in_signed_url": false,
+              "from_number": "+12498005904",
+              "to_number": "+14374945352",
+              "direction": "inbound",
+              "telephony_identifier": {
+                "twilio_call_sid": "CA16a441e63353c0614ab7dc1ff953dd11"
+              }
+            },
+            "name": "Check_Booked_Slots",
+            "args": {
+              "phone": "+12498005904",
+              "clientId": "LuminaMedSpaOakville"
+            }
+          },
+          "webhookUrl": "https://n8n.srv899746.hstgr.cloud/webhook/g_Get_booked_slots",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format All Booked Slots": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Slots Found": {
+      "main": [
+        [
+          {
+            "node": "Format All Booked Slots",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond No Slots Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Calendar Events": {
+      "main": [
+        [
+          {
+            "node": "If Slots Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get All Calendar Events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Respond with All Booked Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Etc/UTC",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "b528326f-a7d9-41c0-aea0-bb5a8d50bfa4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a23a5a36084a4adf4da38e7db159b4442d0f7fa26992b909bde4e7462f866101"
+  },
+  "id": "aH2mWiYat1EYh13Z",
+  "tags": []
+}

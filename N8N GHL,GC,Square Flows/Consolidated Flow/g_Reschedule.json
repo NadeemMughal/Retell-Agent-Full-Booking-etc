@@ -1,0 +1,2851 @@
+{
+  "name": "g_Reschedule",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "client",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "={{ $json.body.args.clientId }}"
+            }
+          ]
+        }
+      },
+      "name": "Get Client from Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2000,
+        -32
+      ],
+      "id": "63e405c0-0b61-4d15-b2ee-d3e88694c26a",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://connect.squareup.com/v2/bookings",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer  {{ $('Get Client from Supabase').item.json.crm_api_key }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -432,
+        -32
+      ],
+      "id": "fffde997-c291-4fc2-af12-13b722763338",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "51dffc54-a470-44a4-883f-8e2f192c6923",
+              "leftValue": "={{ $json.customers[0] }}",
+              "rightValue": "={{ $json.customers[0].id }}",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -656,
+        64
+      ],
+      "id": "638475d3-2bd5-4698-954f-0b3aef2f4af3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1abd6d3-3e73-4b67-a802-f47adce2d281",
+              "name": "message",
+              "value": "Not Exists",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -432,
+        160
+      ],
+      "id": "64546cc5-0316-4ac9-8817-6ca1ec5b3db1",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.squareup.com/v2/customers/search",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('Get Client from Supabase').item.json.crm_api_key }}\"\n}\n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {\n    \"filter\": {\n      \"phone_number\": {\n        \"fuzzy\": \"{{ $('Webhook').item.json.body.args.phone }}\"\n      }\n    }\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -880,
+        64
+      ],
+      "id": "39ec3636-f86d-44e0-a6e8-d7c85b193734",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data from the previous node (e.g., HTTP node)\nconst inputData = $input.all();\n\n// Check if input data exists and has the expected structure\nif (!inputData || !inputData[0]?.json?.bookings) {\n  return [{\n    json: {\n      message: \"No valid bookings data found\"\n    }\n  }];\n}\n\n// Extract bookings from input\nconst bookings = inputData[0].json.bookings;\n\nlet customerId, startAtFilter;\ntry {\n  // Get data from other nodes correctly\n  const httpData = $node[\"HTTP Request1\"].json;\n  const codeData = $node[\"Code in JavaScript\"].json;\n\n  customerId = httpData.customers?.[0]?.id;\n  startAtFilter = codeData.update_time;\n} catch (error) {\n  return [{\n    json: {\n      message: \"Error retrieving customer_id or start_at: \" + error.message\n    }\n  }];\n}\n\n// Validate values\nif (!customerId || !startAtFilter) {\n  return [{\n    json: {\n      message: `Invalid customer_id (${customerId}) or start_at (${startAtFilter})`\n    }\n  }];\n}\n\n// Filter bookings\nconst matchedBookings = bookings.filter(\n  booking => booking.customer_id === customerId && booking.start_at === startAtFilter\n);\n\n// Prepare output\nconst output = matchedBookings.map(booking => ({\n  json: {\n    ...booking,\n    address: booking.address || {\n      address_line_1: \"\",\n      address_line_2: \"\",\n      locality: \"\",\n      administrative_district_level_1: \"\",\n      postal_code: \"\"\n    }\n  }\n}));\n\n// If no matches found\nif (output.length === 0) {\n  return [{\n    json: {\n      message: `No bookings found for customer ID: ${customerId} with start_at: ${startAtFilter}`\n    }\n  }];\n}\n\nreturn output;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -32
+      ],
+      "id": "cdf47166-fdad-4315-a4ab-4c599b5cd78f",
+      "name": "Code",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -208,
+        160
+      ],
+      "id": "dbf6cec4-1d59-48cb-ae20-6ca78ca67f28",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a5730507-a127-48ba-b3ba-e3bc7f9757e5",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "=ACCEPTED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        -32
+      ],
+      "id": "b2778c63-9a22-439d-b931-366d5dc71a76",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7247a632-780a-4780-9dfc-d54d1b434cb2",
+              "name": "message",
+              "value": "Booking not Found",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        64
+      ],
+      "id": "4d88464c-5b7b-4e9a-aed3-3ced862c4ca7",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        688,
+        64
+      ],
+      "id": "7e07d5e5-cdbb-4c28-995e-22702ff99ba2",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://connect.squareup.com/v2/bookings/{{ $('Code1').item.json.id }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('Get Client from Supabase').first().json.crm_api_key }}\"\n}\n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"booking\": {\n    \"address\": {\n      \"address_line_1\": \"{{ $('Code').first().json.address.address_line_1 }}\",\n      \"administrative_district_level_1\": \"{{ $('Code').first().json.address.administrative_district_level_1 }}\",\n      \"locality\": \"{{ $('Code').first().json.address.locality }}\",\n      \"postal_code\": \"{{ $('Code').first().json.address.postal_code }}\"\n    },\n    \"location_type\": \"CUSTOMER_LOCATION\",\n    \"customer_id\": \"{{ $('HTTP Request1').first().json.customers[0].id }}\",\n    \"location_id\": \"{{ $('Get Client from Supabase').item.json.locations }}\",\n    \"start_at\": \"{{ $('Code in JavaScript1').item.json.starttime }}\",\n    \"appointment_segments\": [\n      {\n        \"team_member_id\": \"{{ $('Code').first().json.appointment_segments[0].team_member_id }}\",\n        \"duration_minutes\": {{ $json.duration_minutes }},\n        \"service_variation_id\": \"{{ $('Code').first().json.appointment_segments[0].service_variation_id }}\",\n        \"service_variation_version\": {{ $('Code').first().json.appointment_segments[0].service_variation_version }}\n      }\n    ],\n    \"version\": {{ $('Code').first().json.version }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        -128
+      ],
+      "id": "b8af1aee-f887-46a7-9f50-a7272b94dfc2",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Safe recursive search for a key in any object/array\nfunction findKey(obj, key) {\n  if (obj && typeof obj === 'object') {\n    if (Object.prototype.hasOwnProperty.call(obj, key)) {\n      return obj[key];\n    }\n    for (let k in obj) {\n      const found = findKey(obj[k], key);\n      if (found !== undefined) return found;\n    }\n  }\n  return undefined;\n}\n\nconst accepted = [];\n\nitems.forEach(item => {\n  const status = findKey(item, 'status');\n\n  if (status === 'ACCEPTED') {\n    // Find the full booking object — assuming it's the parent object of 'status'\n    const bookingObject = item.json && Object.keys(item.json).length > 0 ? item.json : item;\n    accepted.push({ json: bookingObject });\n  }\n});\n\nreturn accepted;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        -32
+      ],
+      "id": "92034d68-68a8-4a0c-a38d-f33c0b5093db",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n\nconst data = $node[\"Webhook\"].json;\n\n// Support nested args (e.g. inside body)\nconst args = data.args || (data.body && data.body.args);\n\nif (!args || !args.starttime || !args.endtime) {\n  throw new Error(\"Missing 'starttime' or 'endtime' in input.\");\n}\n\nconst start = new Date(args.starttime);\nconst end = new Date(args.endtime);\nconst duration = (end - start) / (1000 * 60);\n\nreturn [\n  {\n    json: {\n      duration_minutes: duration,\n      starttime: args.starttime\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -128
+      ],
+      "id": "e73d0a10-0643-4382-b912-fd4dcace92c9",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "efdf4aa2-d257-4f88-ad28-38411f4cd341",
+              "name": "message",
+              "value": "Update Booking Succssfully ",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        912,
+        -128
+      ],
+      "id": "d15d4424-8a6b-429e-b02b-c289a6440cc8",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1360,
+        -144
+      ],
+      "id": "b0bbb505-fa9e-4fc8-8020-6c75ae63e2b5",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "66c50258-e68f-46d9-97ab-aabaaec9b554",
+              "leftValue": "={{ $json.crm_type }}",
+              "rightValue": "NULL",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1776,
+        -32
+      ],
+      "id": "7645dff2-154c-4612-bc59-d93400efafc4",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "g_Rechedule",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2224,
+        -32
+      ],
+      "id": "6bf43f47-7b0b-446f-9984-9d3b41ba44c5",
+      "name": "Webhook",
+      "webhookId": "280b7698-5f20-47dc-b81b-bdddd4df9490"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "Square",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "013772d1-c1be-453d-8204-63e7944b4c5e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Square"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cd5f47b3-824d-4ae6-b5b4-d746c5006947",
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "ghl",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "GoHighLevel"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1552,
+        160
+      ],
+      "id": "6c12eb58-cde4-486f-9a3d-cebcb0029d8d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $('Get Client from Supabase').all().length }}",
+              "operation": "larger"
+            }
+          ]
+        }
+      },
+      "name": "If Client Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        -224
+      ],
+      "id": "b256ce9d-dcd9-46b8-8ee9-3087382d66d8"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('Get Client from Supabase').item.json.calendar_id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "name": "Find Old Google Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -880,
+        -320
+      ],
+      "id": "8c6dda34-6340-4d52-aed5-69150bdc45ba",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OgBzpLjgpwAE07vo",
+          "name": "projects.metaviz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter events that match start/end exactly\nconst start = $('Code3').first().json.prevStarttime\nconst end = $('Code3').first().json.prevEndtime\nconst phone = $('Webhook').item.json.body.args.phone || '';\n\n\n\n// Find events matching the exact start and end times\nconst matches = $input.all().filter(item => {\n  const ev = item.json;\n  const evStart = ev.start?.dateTime || ev.start?.date;\n  const evEnd = ev.end?.dateTime || ev.end?.date;\n  const text = (ev.description || '') + (ev.summary || '');\n  \n  // Log each comparison\n  console.log(`Event ${ev.id}: ${evStart} vs ${start}, ${evEnd} vs ${end}, contains phone: ${text.includes(phone)}`);\n  \n  return evStart === start && evEnd === end && text.includes(phone);\n});\n\nconsole.log('Matches found:', matches.length);\n\n// Return matches or fallback\nreturn matches.length ? matches : [{json: {message: \"No matching events found\"}}];"
+      },
+      "name": "Filter Matching Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        -320
+      ],
+      "id": "4e2ea3e1-e496-4bec-af22-24866c5e3e4e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $('Filter Matching Event').all().length }}",
+              "operation": "larger"
+            },
+            {
+              "value1": "={{ $('Filter Matching Event').item.json.message }}",
+              "operation": "notEqual",
+              "value2": {}
+            }
+          ]
+        }
+      },
+      "name": "If Old Event Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        -320
+      ],
+      "id": "b10f2de4-66fb-409f-9bab-64dd6c17cc57"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('Get Client from Supabase').first().json.calendar_id }}",
+          "mode": "id"
+        },
+        "eventId": "={{ $json.id }}",
+        "options": {
+          "sendUpdates": "all"
+        }
+      },
+      "name": "Delete Old Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -208,
+        -416
+      ],
+      "id": "23db3fa9-ea1f-4ab0-ab13-8735879609a0",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OgBzpLjgpwAE07vo",
+          "name": "projects.metaviz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('Get Client from Supabase').first().json.calendar_id }}",
+          "mode": "id"
+        },
+        "start": "={{ $('Code3').item.json.newStartTime }}",
+        "end": "={{ $('Code3').item.json.newEndTime }}",
+        "additionalFields": {
+          "description": "={{ $('Webhook').first().json.body.args.newDescription }} ",
+          "summary": "={{ $('Webhook').item.json.body.args.newTitle || 'Rescheduled Booking' }}"
+        }
+      },
+      "name": "Create New Google Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        16,
+        -416
+      ],
+      "id": "ca5f87fe-720b-4c51-9132-0081ac7846c9",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OgBzpLjgpwAE07vo",
+          "name": "projects.metaviz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Rescheduled successfully",
+        "options": {}
+      },
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        528,
+        -432
+      ],
+      "id": "3ec5a14f-52bb-4a6a-b2e3-c7cd65a8fe43"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "name": "Respond Old Event Not Found",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        -224
+      ],
+      "id": "fd7c9fe7-3291-4272-ae4e-a3d7277a9243"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "name": "Respond Client Not Found",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -880,
+        -128
+      ],
+      "id": "04812aab-3b8b-4241-bac2-ab740da648a1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input\nconst items = $input.all();\n\nreturn items.map(item => {\n  const data = item.json;\n  const tz = data.usedTimeZone;\n\n  return {\n    json: {\n      newStartTime: data.newStartTime,\n      newEndTime: data.newEndTime,\n      prevStarttime: data.prevStarttime.replace(/Z$/, \"\") + tz,\n      prevEndtime: data.prevEndtime.replace(/Z$/, \"\") + tz,\n      usedTimeZone: tz\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1328,
+        -224
+      ],
+      "id": "08fe8c1f-21c3-41a6-89ae-36bf4608851c",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get webhook data from first item\nconst data = $node[\"Webhook\"].json;\n\n// Log input data for debugging\nconsole.log('Webhook data:', JSON.stringify(data, null, 2));\n\n// Check if data.body.args exists\nif (!data.body || !data.body.args || typeof data.body.args !== 'object') {\n    throw new Error('Missing or invalid \"body.args\" in webhook data: ' + JSON.stringify(data, null, 2));\n}\n\n// Extract times from webhook input\nconst startUTC = data.body.args.newStart;\nconst endUTC = data.body.args.newEnd;\n\n// Validate starttime and endtime\nif (!startUTC || !endUTC) {\n    throw new Error('Missing starttime or endtime in webhook data: ' + JSON.stringify(data.body.args, null, 2));\n}\n\n// Get timezone from Supabase node input\nconst zone = $input.first().json;\nconst timeZone = zone.Time_Zone; // Example: \"America/Toronto\"\n\n// Validate timezone\nif (!timeZone) {\n    throw new Error('Missing Time_Zone in Supabase data: ' + JSON.stringify(zone, null, 2));\n}\n\n// Helper function to ensure UTC format\nfunction ensureUTCFormat(dateString) {\n    // If the string doesn't end with 'Z' or timezone offset, assume it's UTC and add 'Z'\n    if (!dateString.endsWith('Z') && !dateString.match(/[+-]\\d{2}:\\d{2}$/)) {\n        return dateString + 'Z';\n    }\n    return dateString;\n}\n\n// Ensure proper UTC format\nconst startUTCFormatted = ensureUTCFormat(startUTC);\nconst endUTCFormatted = ensureUTCFormat(endUTC);\n\n// Convert to Date objects\nconst startDate = new Date(startUTCFormatted);\nconst endDate = new Date(endUTCFormatted);\n\n// Check if dates are valid\nif (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {\n    throw new Error(`Invalid starttime or endtime format: ${startUTC}, ${endUTC}`);\n}\n\n// Convert timezone with inverted logic\nfunction convertToTimezone(date, timezone) {\n    // Get timezone offset in minutes\n    const tempDate = new Date(date.toLocaleString(\"en-US\", {timeZone: timezone}));\n    const utcDate = new Date(date.toLocaleString(\"en-US\", {timeZone: \"UTC\"}));\n    const offsetMinutes = (utcDate.getTime() - tempDate.getTime()) / (1000 * 60);\n    \n    console.log(`Original offset for ${timezone}: ${-offsetMinutes} minutes`);\n    \n    // Invert the logic: if offset is negative, make it positive and add; if positive, make it negative and subtract\n    const invertedOffsetMinutes = offsetMinutes; // This effectively inverts the normal timezone conversion\n    \n    console.log(`Inverted offset: ${invertedOffsetMinutes} minutes`);\n    \n    // Apply the inverted offset\n    const convertedDate = new Date(date.getTime() + (invertedOffsetMinutes * 60 * 1000));\n    \n    // Format as ISO string without timezone suffix\n    const year = convertedDate.getUTCFullYear();\n    const month = String(convertedDate.getUTCMonth() + 1).padStart(2, '0');\n    const day = String(convertedDate.getUTCDate()).padStart(2, '0');\n    const hour = String(convertedDate.getUTCHours()).padStart(2, '0');\n    const minute = String(convertedDate.getUTCMinutes()).padStart(2, '0');\n    const second = String(convertedDate.getUTCSeconds()).padStart(2, '0');\n    \n    return `${year}-${month}-${day}T${hour}:${minute}:${second}`;\n}\n\n// Convert times to target timezone\nconst formattedStart = convertToTimezone(startDate, timeZone);\nconst formattedEnd = convertToTimezone(endDate, timeZone);\n\n// Log the inverted conversion for debugging\nconsole.log(`Applied inverted timezone logic for ${timeZone}`);\nconsole.log(`Converted ${startUTC} (UTC) to ${formattedStart} (inverted ${timeZone})`);\nconsole.log(`Converted ${endUTC} (UTC) to ${formattedEnd} (inverted ${timeZone})`);\n\n// Return formatted times with original data\nreturn [{\n    newStartTime: formattedStart,\n    newEndTime: formattedEnd,\n    usedTimeZone: timeZone,\n    prevStarttime: $('Webhook').first().json.body.args.prevStart,\n    prevEndtime: $('Webhook').first().json.body.args.prevEnd\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        -224
+      ],
+      "id": "61d79bdd-f285-4921-8825-ecdfae186eac",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "customers",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "keyValue": "={{ $('Webhook').item.json.body.args.phone }}"
+            },
+            {
+              "keyName": "agent_id",
+              "keyValue": "={{ $('Webhook').item.json.body.call.agent_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        352
+      ],
+      "id": "56d0ce1a-a4fe-493e-8136-a086f4f8209f",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// targetStart is directly inside args\nconst targetStart = $('Webhook').first().json.body.args.targetStart;\n\nlet matches = [];\n\nfor (const item of items) {\n  const events = item.json.events || [];\n\n  for (const event of events) {\n    if (event.startTime === targetStart) {\n      matches.push({\n        json: {\n          id: event.id,\n          title: event.title,\n          startTime: event.startTime,\n          endTime: event.endTime\n        }\n      });\n    }\n  }\n}\n\nreturn matches;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        352
+      ],
+      "id": "0db31d4e-3e84-488f-b9d3-a91e469f5d92",
+      "name": "Code5"
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{$json.Contact_id}}/appointments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$('Code6').item.json.access_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -880,
+        352
+      ],
+      "id": "3c8a9bb1-6366-4cc4-a9cd-b3a5c47ccb81",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/calendars/events/appointments/{{$('Code5').item.json.id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Code6').item.json.access_token }}"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"calendarId\":\"{{ $('Get Client from Supabase').item.json.calendar_id }}\",\n  \"startTime\": \"{{$json.convertedStart}}\",\n  \"endTime\": \"{{$json.convertedEnd}}\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        352
+      ],
+      "id": "1886cede-bbbd-4535-8776-f17c4d4be873",
+      "name": "HTTP Request4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if crm_api_key exists and is not undefined or \"undefined\"\nif (!$json[\"crm_api_key\"] || $json[\"crm_api_key\"] === \"undefined\") {\n  return [{ json: { error: \"crm_api_key is undefined or missing\" } }];\n}\n\ntry {\n  // Parse the crm_api_key field (it's a JSON string with an array inside)\n  const crmApiKey = JSON.parse($json[\"crm_api_key\"]);\n\n  // Check if crmApiKey is an array and has at least one element\n  if (!Array.isArray(crmApiKey) || crmApiKey.length === 0) {\n    return [{ json: { error: \"crm_api_key is not a valid array or is empty\" } }];\n  }\n\n  // The first element of the array is the response object\n  const response = crmApiKey[0];\n\n  // Return the parsed response with access_token, refresh_token, etc.\n  return [{ json: response }];\n} catch (error) {\n  // Return error details for debugging\n  return [{ json: { error: \"Failed to parse JSON\", details: error.message } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1328,
+        352
+      ],
+      "id": "0a7df974-7cbd-4e1b-89e4-782974c953c7",
+      "name": "Code6"
+    },
+    {
+      "parameters": {
+        "jsCode": "// const webhook_data = $node[\"Webhook\"].json;\n\n// return {\n//   starttime: $('Webhook').first().json.body[0].args.starttime,\n//   endtime: $('Webhook').first().json.body[0].args.endtime\n// }\n\nconst webhook_data = $node[\"Webhook\"].json;\n\nreturn {\n  starttime: $('Webhook').first().json.body.args.starttime,\n  endtime: $('Webhook').first().json.body.args.endtime\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        352
+      ],
+      "id": "d1f9d70c-7419-45b3-a8d9-49514198541e",
+      "name": "Code7"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data\nconst items = $input.all();\n\nreturn items.map(item => {\n  const data = item.json;\n\n  // Offset from Supabase (e.g. \"-04:00\")\n  const offset = $('Get Client from Supabase').first().json.Time_Zone || \"Z\";\n\n  // Convert start and end\n  const start = new Date(data.starttime)\n    .toISOString()\n    .replace(\"Z\", offset);\n\n  const end = new Date(data.endtime)\n    .toISOString()\n    .replace(\"Z\", offset);\n\n  return {\n    json: {\n      convertedStart: start,\n      convertedEnd: end,\n      usedTimeZone: offset\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        352
+      ],
+      "id": "a141fed9-293b-4dcb-9eec-413423a7e206",
+      "name": "Code8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data\nconst items = $input.all();\n\nreturn items.map(item => {\n  const data = item.json;\n\n  // Remove \".000\" if present\n  const start = data.convertedStart.replace(\".000\", \"\");\n  const end = data.convertedEnd.replace(\".000\", \"\");\n\n  return {\n    json: {\n      convertedStart: start,\n      convertedEnd: end,\n      usedTimeZone: data.usedTimeZone\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        352
+      ],
+      "id": "23f6f719-61e2-4a9a-8486-801201e2fb2d",
+      "name": "Code9"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "320deefc-eb55-4e98-9ec3-d477debc6ced",
+              "name": "message",
+              "value": "Update Booking Successfully",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        352
+      ],
+      "id": "5f40f9e9-40ff-47d7-8fc3-a731e23c6eff",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1056,
+        352
+      ],
+      "id": "367f23f4-de94-4df1-8f63-7e68be36ba45",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const client_credential = $node[\"Get Client from Supabase\"].json;\nconst webhook_data = $node[\"Webhook\"].json;\n\n// Helper to format ISO string without milliseconds\nfunction toIsoWithoutMs(date) {\n  return date.toISOString().replace(/\\.\\d{3}Z$/, \"Z\");\n}\n\n// Function to adjust time based on timezone\nfunction adjustTimeWithTimezone(startTime, endTime, timeZone) {\n  const validTimeZone =\n    typeof timeZone === \"string\" && /^[-+]\\d{2}:\\d{2}$/.test(timeZone)\n      ? timeZone\n      : $('Get Client from Supabase').first().json.Time_Zone;\n  \n  if (!validTimeZone) return { starttime: startTime, endtime: endTime };\n  \n  const sign = validTimeZone.startsWith(\"-\") ? 1 : -1;\n  const [hours, minutes] = validTimeZone\n    .replace(/[-+]/, \"\")\n    .split(\":\")\n    .map(Number);\n  const offsetMs = (hours * 60 + minutes) * 60 * 1000 * sign;\n  const startDate = new Date(startTime);\n  const endDate = new Date(endTime);\n  const adjustedStart = new Date(startDate.getTime() + offsetMs);\n  const adjustedEnd = new Date(endDate.getTime() + offsetMs);\n  return {\n    starttime: toIsoWithoutMs(adjustedStart),\n    endtime: toIsoWithoutMs(adjustedEnd),\n  };\n}\n\n// Ensure webhook_data is an array\nconst webhookArray = Array.isArray(webhook_data) ? webhook_data : [webhook_data];\n\n// Process the webhook data\nconst result = webhookArray.map((item) => {\n  const timeZone = client_credential[0]?.Time_Zone;\n  \n  // Debug: Check what we're actually getting at each step\n  const debugInfo = {\n    item_exists: !!item,\n    body_exists: !!item.body,\n    body_is_array: Array.isArray(item.body),\n    body_length: Array.isArray(item.body) ? item.body.length : 'not array',\n    first_body_item: item.body?.[0],\n    nested_body: item.body?.[0]?.body,\n    args: item.body?.[0]?.body?.args,\n    update_time_value: item.body?.[0]?.body?.args?.update_time\n  };\n  \n  // Fixed: Correct path based on your webhook data structure\n  const { update_time } = item.body?.args || {};\n  \n  if (!update_time) {\n    return { \n      debug: debugInfo,\n      message: \"No update_time found\"\n    };\n  }\n  \n  const adjustedTimes = adjustTimeWithTimezone(update_time, update_time, timeZone);\n  return { update_time: adjustedTimes.starttime };\n});\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        64
+      ],
+      "id": "16fbcd53-01ac-4e59-9c58-769873b269a4",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const client_credential = $node[\"Get Client from Supabase\"].json;\nconst webhook_data = $node[\"Webhook\"].json;\n\n// Function to adjust time based on timezone\nfunction adjustTimeWithTimezone(startTime, endTime, timeZone) {\n  // Use default timezone if undefined or invalid\n  const validTimeZone = typeof timeZone === 'string' && /^[-+]\\d{2}:\\d{2}$/.test(timeZone) ? timeZone :  $('Get Client from Supabase').first().json.Time_Zone;\n  \n  // Parse the timezone offset (e.g., \"-04:00\" or \"+04:00\")\n  const sign = validTimeZone.startsWith('-') ? 1 : -1; // Negative timezone becomes positive, positive becomes negative\n  const [hours, minutes] = validTimeZone.replace(/[-+]/, '').split(':').map(Number);\n  const offsetMs = (hours * 60 + minutes) * 60 * 1000 * sign;\n\n  // Parse the start and end times\n  const startDate = new Date(startTime);\n  const endDate = new Date(endTime);\n\n  // Adjust times by adding the offset\n  const adjustedStart = new Date(startDate.getTime() + offsetMs);\n  const adjustedEnd = new Date(endDate.getTime() + offsetMs);\n\n  // Format the adjusted times back to ISO string\n  return {\n    starttime: adjustedStart.toISOString(),\n    endtime: adjustedEnd.toISOString()\n  };\n}\n\n// Ensure webhook_data is an array\nconst webhookArray = Array.isArray(webhook_data) ? webhook_data : [webhook_data];\n\n// Process the webhook data\nconst result = webhookArray.map(item => {\n  const timeZone = client_credential[0]?.Time_Zone; // Get timezone, will validate in function\n  const { starttime, endtime } = item.body.args;\n\n  // Adjust the start and end times\n  const adjustedTimes = adjustTimeWithTimezone(starttime, endtime, timeZone);\n\n  // Update the item with adjusted times\n  return {\n\n        starttime: adjustedTimes.starttime,\n        endtime: adjustedTimes.endtime\n      }\n    });\n\n// Return the modified data\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1328,
+        64
+      ],
+      "id": "7cd89a1c-034d-4beb-9059-917f098ac110",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Webhook').item.json.body.call.to_number }}",
+        "to": "={{ $('Webhook').item.json.body.call.from_number }}",
+        "message": "=Hi {{ $json.description }}\n\nDate And Time: \nStart At:{{ $('Webhook').first().json.body.args.newStart }}\nEnd At:\n{{ $('Webhook').item.json.body.args.newEnd }}\n\nWith: {{ $('Get Client from Supabase').item.json.business_name }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        224,
+        -416
+      ],
+      "id": "2a6bb312-4c43-4b69-9332-06e44f4ce5f1",
+      "name": "Send an SMS/MMS/WhatsApp message",
+      "credentials": {
+        "twilioApi": {
+          "id": "co7Xlb1CtK2sVaHl",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Webhook').item.json.body.call.to_number }}",
+        "to": "={{ $('Webhook').item.json.body.call.from_number }}",
+        "message": "=Hi,Your Appointment has been rescheduled at {{ $('Webhook').item.json.body.args.starttime }} with duration of {{ $('HTTP Request2').item.json.booking.appointment_segments[0].duration_minutes }} mins.\nDate And Time:  \nStart At: {{ $('Webhook').item.json.body.args.starttime }}   \nEnd At: {{ $('Webhook').item.json.body.args.endtime }}\nWith: {{ $('Get Client from Supabase').item.json.business_name }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        -144
+      ],
+      "id": "828d7fce-56b3-4187-9c90-54fa0df7974d",
+      "name": "Send an SMS/MMS/WhatsApp message1",
+      "credentials": {
+        "twilioApi": {
+          "id": "co7Xlb1CtK2sVaHl",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Webhook').item.json.body.call.to_number }}",
+        "to": "={{ $('Webhook').item.json.body.call.from_number }}",
+        "message": "=Hi, Your Appointment has been rescheduled.\nDate And Time:   \nStart At: \n{{ $('Code8').item.json.convertedStart }}\nEnd At:\n{{ $('Code8').item.json.convertedEnd }}\nWith: {{ $('Get Client from Supabase').item.json.business_name }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        672,
+        352
+      ],
+      "id": "a78cb19c-d4ae-4d88-8992-6d6e687f8b23",
+      "name": "Send an SMS/MMS/WhatsApp message2",
+      "credentials": {
+        "twilioApi": {
+          "id": "co7Xlb1CtK2sVaHl",
+          "name": "Twilio account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv899746.hstgr.cloud",
+            "user-agent": "axios/1.11.0",
+            "content-length": "19464",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "100.20.5.228",
+            "x-forwarded-host": "n8n.srv899746.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "1f699411ba4c",
+            "x-real-ip": "100.20.5.228",
+            "x-retell-signature": "v=1758622538910,d=03c8ca7b0a70479a8f26990c8293994b6640dd4f82e99893928deb5f6684ccdb"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "call": {
+              "call_id": "call_aa903b02128877d541e21935dea",
+              "call_type": "phone_call",
+              "agent_id": "agent_80a7e5ddade104137ac8aba68c",
+              "agent_version": 0,
+              "agent_name": "GHL-LuminaMedSpaOakville",
+              "retell_llm_dynamic_variables": {
+                "twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "twilio-callsid": "CAdcf09b8fad2d25aad8538a370a8e2f57",
+                "first_name": "John",
+                "last_name": "Doe",
+                "customer_email": "",
+                "customer_id": "b87fdb4f-5e94-4109-b254-a9bef9cb5bc5",
+                "preferred_service": "",
+                "preferred_time_slot": "",
+                "total_visits": "",
+                "total_spent": "",
+                "last_visit_date": "",
+                "customer_notes": "",
+                "account_status": "active",
+                "customer_status": "existing"
+              },
+              "custom_sip_headers": {
+                "x-twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "x-twilio-callsid": "CAdcf09b8fad2d25aad8538a370a8e2f57"
+              },
+              "call_status": "ongoing",
+              "start_timestamp": 1758622486942,
+              "transcript": "Agent: Hi John Doe, Lumina MedSpa here! How can I help you today?\nUser: I want to reschedule my appointment.\nAgent: Let me \nAgent: check your booked slot, Please hold on.Looks like you have appointments on:\n\n1. September 24th from 10:00 AM to 11:00 AM\n2. September 24th from 2:00 PM to 3:00 PM\n3. September 24th from 3:00 PM to 4:00 PM\n\nWhich one would you like to reschedule?\nUser: I want to reschedule from three PM.\nUser: I will prefer that. Is there any slot available at five PM?\nAgent: Let me check \nAgent: Availability for you Please hold on.Good news! There is a slot available at 5:00 PM on September 24th. Would you like me to reschedule your appointment to that time?\nUser: Yeah.\n",
+              "transcript_object": [
+                {
+                  "role": "agent",
+                  "content": "Hi John Doe, Lumina MedSpa here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi ",
+                      "start": 1.696,
+                      "end": 1.905
+                    },
+                    {
+                      "word": "John ",
+                      "start": 1.905,
+                      "end": 2.103
+                    },
+                    {
+                      "word": "Doe, ",
+                      "start": 2.103,
+                      "end": 2.323
+                    },
+                    {
+                      "word": "Lumina ",
+                      "start": 2.323,
+                      "end": 2.637
+                    },
+                    {
+                      "word": "MedSpa ",
+                      "start": 2.637,
+                      "end": 2.962
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.962,
+                      "end": 3.473
+                    },
+                    {
+                      "word": " How ",
+                      "start": 3.518583251953125,
+                      "end": 3.669583251953125
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.669583251953125,
+                      "end": 3.797583251953125
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.797583251953125,
+                      "end": 3.855583251953125
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.855583251953125,
+                      "end": 4.018583251953125
+                    },
+                    {
+                      "word": "you ",
+                      "start": 4.018583251953125,
+                      "end": 4.122583251953125
+                    },
+                    {
+                      "word": "today?",
+                      "start": 4.122583251953125,
+                      "end": 4.679583251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to reschedule my appointment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 5.332,
+                      "end": 5.652
+                    },
+                    {
+                      "word": "want ",
+                      "start": 5.652,
+                      "end": 5.8919997
+                    },
+                    {
+                      "word": "to ",
+                      "start": 5.8919997,
+                      "end": 6.0520000000000005
+                    },
+                    {
+                      "word": "reschedule ",
+                      "start": 6.0520000000000005,
+                      "end": 6.452
+                    },
+                    {
+                      "word": "my ",
+                      "start": 6.452,
+                      "end": 6.772
+                    },
+                    {
+                      "word": "appointment.",
+                      "start": 6.772,
+                      "end": 7.092
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 9.096,
+                      "end": 9.259
+                    },
+                    {
+                      "word": "me ",
+                      "start": 9.259,
+                      "end": 9.352
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "agent",
+                  "content": "check your booked slot, Please hold on.Looks like you have appointments on:\n\n1. September 24th from 10:00 AM to 11:00 AM\n2. September 24th from 2:00 PM to 3:00 PM\n3. September 24th from 3:00 PM to 4:00 PM\n\nWhich one would you like to reschedule?",
+                  "words": [
+                    {
+                      "word": "check ",
+                      "start": 9.352,
+                      "end": 9.549
+                    },
+                    {
+                      "word": "your ",
+                      "start": 9.549,
+                      "end": 9.689
+                    },
+                    {
+                      "word": "booked ",
+                      "start": 9.689,
+                      "end": 9.909
+                    },
+                    {
+                      "word": "slot, ",
+                      "start": 9.909,
+                      "end": 10.374
+                    },
+                    {
+                      "word": "Please ",
+                      "start": 10.374,
+                      "end": 10.745
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 10.745,
+                      "end": 11.035
+                    },
+                    {
+                      "word": "on.",
+                      "start": 11.035,
+                      "end": 11.558
+                    },
+                    {
+                      "word": "Looks ",
+                      "start": 11.56975,
+                      "end": 11.80175
+                    },
+                    {
+                      "word": "like ",
+                      "start": 11.80175,
+                      "end": 11.92975
+                    },
+                    {
+                      "word": "you ",
+                      "start": 11.92975,
+                      "end": 12.03375
+                    },
+                    {
+                      "word": "have ",
+                      "start": 12.03375,
+                      "end": 12.18475
+                    },
+                    {
+                      "word": "appointments ",
+                      "start": 12.18475,
+                      "end": 12.69575
+                    },
+                    {
+                      "word": "on:\n",
+                      "start": 12.69575,
+                      "end": 14.52975
+                    },
+                    {
+                      "word": "\n1. ",
+                      "start": 14.529916748046874,
+                      "end": 14.529916748046874
+                    },
+                    {
+                      "word": "September ",
+                      "start": 14.575916748046875,
+                      "end": 15.017916748046876
+                    },
+                    {
+                      "word": "24th ",
+                      "start": 15.017916748046876,
+                      "end": 15.284916748046875
+                    },
+                    {
+                      "word": "from ",
+                      "start": 15.284916748046875,
+                      "end": 15.644916748046874
+                    },
+                    {
+                      "word": "10:00 ",
+                      "start": 15.644916748046874,
+                      "end": 15.899916748046875
+                    },
+                    {
+                      "word": "AM ",
+                      "start": 15.899916748046875,
+                      "end": 16.143916748046873
+                    },
+                    {
+                      "word": "to ",
+                      "start": 16.143916748046873,
+                      "end": 16.468916748046876
+                    },
+                    {
+                      "word": "11:00 ",
+                      "start": 16.468916748046876,
+                      "end": 16.619916748046876
+                    },
+                    {
+                      "word": "AM\n",
+                      "start": 16.619916748046876,
+                      "end": 16.944916748046875
+                    },
+                    {
+                      "word": "2. ",
+                      "start": 16.944916748046875,
+                      "end": 17.223916748046875
+                    },
+                    {
+                      "word": "September ",
+                      "start": 17.733833251953126,
+                      "end": 18.198833251953126
+                    },
+                    {
+                      "word": "24th ",
+                      "start": 18.198833251953126,
+                      "end": 18.442833251953125
+                    },
+                    {
+                      "word": "from ",
+                      "start": 18.442833251953125,
+                      "end": 18.697833251953124
+                    },
+                    {
+                      "word": "2:00 ",
+                      "start": 18.697833251953124,
+                      "end": 18.894833251953123
+                    },
+                    {
+                      "word": "PM ",
+                      "start": 18.894833251953123,
+                      "end": 19.115833251953124
+                    },
+                    {
+                      "word": "to ",
+                      "start": 19.115833251953124,
+                      "end": 19.463833251953126
+                    },
+                    {
+                      "word": "3:00 ",
+                      "start": 19.463833251953126,
+                      "end": 19.626833251953126
+                    },
+                    {
+                      "word": "PM\n",
+                      "start": 19.626833251953126,
+                      "end": 19.870833251953126
+                    },
+                    {
+                      "word": "3. ",
+                      "start": 19.870833251953126,
+                      "end": 20.125833251953125
+                    },
+                    {
+                      "word": "September ",
+                      "start": 20.706,
+                      "end": 21.217
+                    },
+                    {
+                      "word": "24th ",
+                      "start": 21.217,
+                      "end": 21.508
+                    },
+                    {
+                      "word": "from ",
+                      "start": 21.508,
+                      "end": 21.856
+                    },
+                    {
+                      "word": "3:00 ",
+                      "start": 21.856,
+                      "end": 22.111
+                    },
+                    {
+                      "word": "PM ",
+                      "start": 22.111,
+                      "end": 22.367
+                    },
+                    {
+                      "word": "to ",
+                      "start": 22.367,
+                      "end": 22.738
+                    },
+                    {
+                      "word": "4:00 ",
+                      "start": 22.738,
+                      "end": 22.924
+                    },
+                    {
+                      "word": "PM\n",
+                      "start": 22.924,
+                      "end": 23.156
+                    },
+                    {
+                      "word": "\nWhich ",
+                      "start": 23.156,
+                      "end": 23.504
+                    },
+                    {
+                      "word": "one ",
+                      "start": 23.504,
+                      "end": 23.771
+                    },
+                    {
+                      "word": "would ",
+                      "start": 23.771,
+                      "end": 23.899
+                    },
+                    {
+                      "word": "you ",
+                      "start": 23.899,
+                      "end": 24.05
+                    },
+                    {
+                      "word": "like ",
+                      "start": 24.05,
+                      "end": 24.166
+                    },
+                    {
+                      "word": "to ",
+                      "start": 24.166,
+                      "end": 24.317
+                    },
+                    {
+                      "word": "reschedule?",
+                      "start": 24.317,
+                      "end": 24.422
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to reschedule from three PM.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 26.862,
+                      "end": 27.022
+                    },
+                    {
+                      "word": "want ",
+                      "start": 27.022,
+                      "end": 27.342
+                    },
+                    {
+                      "word": "to ",
+                      "start": 27.342,
+                      "end": 27.502
+                    },
+                    {
+                      "word": "reschedule ",
+                      "start": 27.502,
+                      "end": 28.302001
+                    },
+                    {
+                      "word": "from ",
+                      "start": 28.302001,
+                      "end": 28.862
+                    },
+                    {
+                      "word": "three ",
+                      "start": 28.862,
+                      "end": 29.182
+                    },
+                    {
+                      "word": "PM.",
+                      "start": 29.182,
+                      "end": 29.582
+                    }
+                  ]
+                },
+                {
+                  "role": "user",
+                  "content": "I will prefer that. Is there any slot available at five PM?",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 30.302001,
+                      "end": 30.542001
+                    },
+                    {
+                      "word": "will ",
+                      "start": 30.542001,
+                      "end": 30.702001
+                    },
+                    {
+                      "word": "prefer ",
+                      "start": 30.752,
+                      "end": 31.311999999999998
+                    },
+                    {
+                      "word": "that. ",
+                      "start": 31.311999999999998,
+                      "end": 31.792001
+                    },
+                    {
+                      "word": "Is ",
+                      "start": 31.792001,
+                      "end": 32.032001
+                    },
+                    {
+                      "word": "there ",
+                      "start": 32.032001,
+                      "end": 32.192
+                    },
+                    {
+                      "word": "any ",
+                      "start": 32.192,
+                      "end": 32.432
+                    },
+                    {
+                      "word": "slot ",
+                      "start": 32.432,
+                      "end": 32.672000000000004
+                    },
+                    {
+                      "word": "available ",
+                      "start": 32.672000000000004,
+                      "end": 33.072
+                    },
+                    {
+                      "word": "at ",
+                      "start": 33.072,
+                      "end": 33.312000000000005
+                    },
+                    {
+                      "word": "five ",
+                      "start": 33.312000000000005,
+                      "end": 33.552
+                    },
+                    {
+                      "word": "PM?",
+                      "start": 33.552,
+                      "end": 33.792
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me check ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 36.57,
+                      "end": 36.768
+                    },
+                    {
+                      "word": "me ",
+                      "start": 36.768,
+                      "end": 36.884
+                    },
+                    {
+                      "word": "check ",
+                      "start": 36.884,
+                      "end": 37.081
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "agent",
+                  "content": "Availability for you Please hold on.Good news! There is a slot available at 5:00 PM on September 24th. Would you like me to reschedule your appointment to that time?",
+                  "words": [
+                    {
+                      "word": "Availability ",
+                      "start": 37.081,
+                      "end": 37.65
+                    },
+                    {
+                      "word": "for ",
+                      "start": 37.65,
+                      "end": 37.778
+                    },
+                    {
+                      "word": "you ",
+                      "start": 37.778,
+                      "end": 37.905
+                    },
+                    {
+                      "word": "Please ",
+                      "start": 37.905,
+                      "end": 38.393
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 38.393,
+                      "end": 38.985
+                    },
+                    {
+                      "word": "on.",
+                      "start": 38.985,
+                      "end": 39.368
+                    },
+                    {
+                      "word": "Good ",
+                      "start": 39.41429174804688,
+                      "end": 39.589291748046875
+                    },
+                    {
+                      "word": "news!",
+                      "start": 39.589291748046875,
+                      "end": 40.20429174804688
+                    },
+                    {
+                      "word": " There ",
+                      "start": 40.250208251953126,
+                      "end": 40.41320825195312
+                    },
+                    {
+                      "word": "is ",
+                      "start": 40.41320825195312,
+                      "end": 40.51720825195312
+                    },
+                    {
+                      "word": "a ",
+                      "start": 40.51720825195312,
+                      "end": 40.58720825195312
+                    },
+                    {
+                      "word": "slot ",
+                      "start": 40.58720825195312,
+                      "end": 40.93520825195313
+                    },
+                    {
+                      "word": "available ",
+                      "start": 40.93520825195313,
+                      "end": 41.42320825195313
+                    },
+                    {
+                      "word": "at ",
+                      "start": 41.42320825195313,
+                      "end": 41.53920825195313
+                    },
+                    {
+                      "word": "5:00 ",
+                      "start": 41.53920825195313,
+                      "end": 41.80620825195312
+                    },
+                    {
+                      "word": "PM ",
+                      "start": 41.80620825195312,
+                      "end": 42.201208251953126
+                    },
+                    {
+                      "word": "on ",
+                      "start": 42.201208251953126,
+                      "end": 42.363208251953125
+                    },
+                    {
+                      "word": "September ",
+                      "start": 42.363208251953125,
+                      "end": 42.839208251953124
+                    },
+                    {
+                      "word": "24th.",
+                      "start": 42.839208251953124,
+                      "end": 43.141208251953124
+                    },
+                    {
+                      "word": " Would ",
+                      "start": 43.87254174804688,
+                      "end": 44.12854174804688
+                    },
+                    {
+                      "word": "you ",
+                      "start": 44.12854174804688,
+                      "end": 44.24454174804688
+                    },
+                    {
+                      "word": "like ",
+                      "start": 44.24454174804688,
+                      "end": 44.43054174804688
+                    },
+                    {
+                      "word": "me ",
+                      "start": 44.43054174804688,
+                      "end": 44.55754174804687
+                    },
+                    {
+                      "word": "to ",
+                      "start": 44.55754174804687,
+                      "end": 44.90654174804688
+                    },
+                    {
+                      "word": "reschedule ",
+                      "start": 44.90654174804688,
+                      "end": 45.46354174804687
+                    },
+                    {
+                      "word": "your ",
+                      "start": 45.46354174804687,
+                      "end": 45.614541748046875
+                    },
+                    {
+                      "word": "appointment ",
+                      "start": 45.614541748046875,
+                      "end": 46.020541748046874
+                    },
+                    {
+                      "word": "to ",
+                      "start": 46.020541748046874,
+                      "end": 46.11354174804688
+                    },
+                    {
+                      "word": "that ",
+                      "start": 46.11354174804688,
+                      "end": 46.276541748046874
+                    },
+                    {
+                      "word": "time?",
+                      "start": 46.276541748046874,
+                      "end": 46.84554174804688
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 47.622,
+                      "end": 47.942
+                    }
+                  ]
+                }
+              ],
+              "transcript_with_tool_calls": [
+                {
+                  "role": "agent",
+                  "content": "Hi John Doe, Lumina MedSpa here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi ",
+                      "start": 1.696,
+                      "end": 1.905
+                    },
+                    {
+                      "word": "John ",
+                      "start": 1.905,
+                      "end": 2.103
+                    },
+                    {
+                      "word": "Doe, ",
+                      "start": 2.103,
+                      "end": 2.323
+                    },
+                    {
+                      "word": "Lumina ",
+                      "start": 2.323,
+                      "end": 2.637
+                    },
+                    {
+                      "word": "MedSpa ",
+                      "start": 2.637,
+                      "end": 2.962
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.962,
+                      "end": 3.473
+                    },
+                    {
+                      "word": " How ",
+                      "start": 3.518583251953125,
+                      "end": 3.669583251953125
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.669583251953125,
+                      "end": 3.797583251953125
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.797583251953125,
+                      "end": 3.855583251953125
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.855583251953125,
+                      "end": 4.018583251953125
+                    },
+                    {
+                      "word": "you ",
+                      "start": 4.018583251953125,
+                      "end": 4.122583251953125
+                    },
+                    {
+                      "word": "today?",
+                      "start": 4.122583251953125,
+                      "end": 4.679583251953125
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to reschedule my appointment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 5.332,
+                      "end": 5.652
+                    },
+                    {
+                      "word": "want ",
+                      "start": 5.652,
+                      "end": 5.8919997
+                    },
+                    {
+                      "word": "to ",
+                      "start": 5.8919997,
+                      "end": 6.0520000000000005
+                    },
+                    {
+                      "word": "reschedule ",
+                      "start": 6.0520000000000005,
+                      "end": 6.452
+                    },
+                    {
+                      "word": "my ",
+                      "start": 6.452,
+                      "end": 6.772
+                    },
+                    {
+                      "word": "appointment.",
+                      "start": 6.772,
+                      "end": 7.092
+                    }
+                  ]
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "603148bccf7bdb2c",
+                  "name": "Check_Booked_Slots",
+                  "arguments": "{\"phone\":\"+12498005904\",\"clientId\":\"LuminaMedSpaOakville\",\"execution_message\":\"Let me check your booked slot, Please hold on.\"}"
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 9.096,
+                      "end": 9.259
+                    },
+                    {
+                      "word": "me ",
+                      "start": 9.259,
+                      "end": 9.352
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "tool_call_result",
+                  "tool_call_id": "603148bccf7bdb2c",
+                  "content": "[{\"startTime\":\"2025-09-24 10:00:00\",\"endTime\":\"2025-09-24 11:00:00\"},{\"startTime\":\"2025-09-24 14:00:00\",\"endTime\":\"2025-09-24 15:00:00\"},{\"startTime\":\"2025-09-24 15:00:00\",\"endTime\":\"2025-09-24 16:00:00\"}]"
+                },
+                {
+                  "role": "agent",
+                  "content": "check your booked slot, Please hold on.Looks like you have appointments on:\n\n1. September 24th from 10:00 AM to 11:00 AM\n2. September 24th from 2:00 PM to 3:00 PM\n3. September 24th from 3:00 PM to 4:00 PM\n\nWhich one would you like to reschedule?",
+                  "words": [
+                    {
+                      "word": "check ",
+                      "start": 9.352,
+                      "end": 9.549
+                    },
+                    {
+                      "word": "your ",
+                      "start": 9.549,
+                      "end": 9.689
+                    },
+                    {
+                      "word": "booked ",
+                      "start": 9.689,
+                      "end": 9.909
+                    },
+                    {
+                      "word": "slot, ",
+                      "start": 9.909,
+                      "end": 10.374
+                    },
+                    {
+                      "word": "Please ",
+                      "start": 10.374,
+                      "end": 10.745
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 10.745,
+                      "end": 11.035
+                    },
+                    {
+                      "word": "on.",
+                      "start": 11.035,
+                      "end": 11.558
+                    },
+                    {
+                      "word": "Looks ",
+                      "start": 11.56975,
+                      "end": 11.80175
+                    },
+                    {
+                      "word": "like ",
+                      "start": 11.80175,
+                      "end": 11.92975
+                    },
+                    {
+                      "word": "you ",
+                      "start": 11.92975,
+                      "end": 12.03375
+                    },
+                    {
+                      "word": "have ",
+                      "start": 12.03375,
+                      "end": 12.18475
+                    },
+                    {
+                      "word": "appointments ",
+                      "start": 12.18475,
+                      "end": 12.69575
+                    },
+                    {
+                      "word": "on:\n",
+                      "start": 12.69575,
+                      "end": 14.52975
+                    },
+                    {
+                      "word": "\n1. ",
+                      "start": 14.529916748046874,
+                      "end": 14.529916748046874
+                    },
+                    {
+                      "word": "September ",
+                      "start": 14.575916748046875,
+                      "end": 15.017916748046876
+                    },
+                    {
+                      "word": "24th ",
+                      "start": 15.017916748046876,
+                      "end": 15.284916748046875
+                    },
+                    {
+                      "word": "from ",
+                      "start": 15.284916748046875,
+                      "end": 15.644916748046874
+                    },
+                    {
+                      "word": "10:00 ",
+                      "start": 15.644916748046874,
+                      "end": 15.899916748046875
+                    },
+                    {
+                      "word": "AM ",
+                      "start": 15.899916748046875,
+                      "end": 16.143916748046873
+                    },
+                    {
+                      "word": "to ",
+                      "start": 16.143916748046873,
+                      "end": 16.468916748046876
+                    },
+                    {
+                      "word": "11:00 ",
+                      "start": 16.468916748046876,
+                      "end": 16.619916748046876
+                    },
+                    {
+                      "word": "AM\n",
+                      "start": 16.619916748046876,
+                      "end": 16.944916748046875
+                    },
+                    {
+                      "word": "2. ",
+                      "start": 16.944916748046875,
+                      "end": 17.223916748046875
+                    },
+                    {
+                      "word": "September ",
+                      "start": 17.733833251953126,
+                      "end": 18.198833251953126
+                    },
+                    {
+                      "word": "24th ",
+                      "start": 18.198833251953126,
+                      "end": 18.442833251953125
+                    },
+                    {
+                      "word": "from ",
+                      "start": 18.442833251953125,
+                      "end": 18.697833251953124
+                    },
+                    {
+                      "word": "2:00 ",
+                      "start": 18.697833251953124,
+                      "end": 18.894833251953123
+                    },
+                    {
+                      "word": "PM ",
+                      "start": 18.894833251953123,
+                      "end": 19.115833251953124
+                    },
+                    {
+                      "word": "to ",
+                      "start": 19.115833251953124,
+                      "end": 19.463833251953126
+                    },
+                    {
+                      "word": "3:00 ",
+                      "start": 19.463833251953126,
+                      "end": 19.626833251953126
+                    },
+                    {
+                      "word": "PM\n",
+                      "start": 19.626833251953126,
+                      "end": 19.870833251953126
+                    },
+                    {
+                      "word": "3. ",
+                      "start": 19.870833251953126,
+                      "end": 20.125833251953125
+                    },
+                    {
+                      "word": "September ",
+                      "start": 20.706,
+                      "end": 21.217
+                    },
+                    {
+                      "word": "24th ",
+                      "start": 21.217,
+                      "end": 21.508
+                    },
+                    {
+                      "word": "from ",
+                      "start": 21.508,
+                      "end": 21.856
+                    },
+                    {
+                      "word": "3:00 ",
+                      "start": 21.856,
+                      "end": 22.111
+                    },
+                    {
+                      "word": "PM ",
+                      "start": 22.111,
+                      "end": 22.367
+                    },
+                    {
+                      "word": "to ",
+                      "start": 22.367,
+                      "end": 22.738
+                    },
+                    {
+                      "word": "4:00 ",
+                      "start": 22.738,
+                      "end": 22.924
+                    },
+                    {
+                      "word": "PM\n",
+                      "start": 22.924,
+                      "end": 23.156
+                    },
+                    {
+                      "word": "\nWhich ",
+                      "start": 23.156,
+                      "end": 23.504
+                    },
+                    {
+                      "word": "one ",
+                      "start": 23.504,
+                      "end": 23.771
+                    },
+                    {
+                      "word": "would ",
+                      "start": 23.771,
+                      "end": 23.899
+                    },
+                    {
+                      "word": "you ",
+                      "start": 23.899,
+                      "end": 24.05
+                    },
+                    {
+                      "word": "like ",
+                      "start": 24.05,
+                      "end": 24.166
+                    },
+                    {
+                      "word": "to ",
+                      "start": 24.166,
+                      "end": 24.317
+                    },
+                    {
+                      "word": "reschedule?",
+                      "start": 24.317,
+                      "end": 24.422
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to reschedule from three PM.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 26.862,
+                      "end": 27.022
+                    },
+                    {
+                      "word": "want ",
+                      "start": 27.022,
+                      "end": 27.342
+                    },
+                    {
+                      "word": "to ",
+                      "start": 27.342,
+                      "end": 27.502
+                    },
+                    {
+                      "word": "reschedule ",
+                      "start": 27.502,
+                      "end": 28.302001
+                    },
+                    {
+                      "word": "from ",
+                      "start": 28.302001,
+                      "end": 28.862
+                    },
+                    {
+                      "word": "three ",
+                      "start": 28.862,
+                      "end": 29.182
+                    },
+                    {
+                      "word": "PM.",
+                      "start": 29.182,
+                      "end": 29.582
+                    }
+                  ]
+                },
+                {
+                  "role": "user",
+                  "content": "I will prefer that. Is there any slot available at five PM?",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 30.302001,
+                      "end": 30.542001
+                    },
+                    {
+                      "word": "will ",
+                      "start": 30.542001,
+                      "end": 30.702001
+                    },
+                    {
+                      "word": "prefer ",
+                      "start": 30.752,
+                      "end": 31.311999999999998
+                    },
+                    {
+                      "word": "that. ",
+                      "start": 31.311999999999998,
+                      "end": 31.792001
+                    },
+                    {
+                      "word": "Is ",
+                      "start": 31.792001,
+                      "end": 32.032001
+                    },
+                    {
+                      "word": "there ",
+                      "start": 32.032001,
+                      "end": 32.192
+                    },
+                    {
+                      "word": "any ",
+                      "start": 32.192,
+                      "end": 32.432
+                    },
+                    {
+                      "word": "slot ",
+                      "start": 32.432,
+                      "end": 32.672000000000004
+                    },
+                    {
+                      "word": "available ",
+                      "start": 32.672000000000004,
+                      "end": 33.072
+                    },
+                    {
+                      "word": "at ",
+                      "start": 33.072,
+                      "end": 33.312000000000005
+                    },
+                    {
+                      "word": "five ",
+                      "start": 33.312000000000005,
+                      "end": 33.552
+                    },
+                    {
+                      "word": "PM?",
+                      "start": 33.552,
+                      "end": 33.792
+                    }
+                  ]
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "0288b644bd9524ad",
+                  "name": "Availability_Google",
+                  "arguments": "{\"starttime\":\"2025-09-24T17:00:00Z\",\"endtime\":\"2025-09-24T20:00:00Z\",\"phone\":\"+12498005904\",\"clientId\":\"LuminaMedSpaOakville\",\"execution_message\":\"Let me check Availability for you Please hold on.\"}"
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me check ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 36.57,
+                      "end": 36.768
+                    },
+                    {
+                      "word": "me ",
+                      "start": 36.768,
+                      "end": 36.884
+                    },
+                    {
+                      "word": "check ",
+                      "start": 36.884,
+                      "end": 37.081
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "tool_call_result",
+                  "tool_call_id": "0288b644bd9524ad",
+                  "content": "[{\"slot\":\"2025-09-24T13:00:00-04:00\"},{\"slot\":\"2025-09-24T13:30:00-04:00\"},{\"slot\":\"2025-09-24T16:00:00-04:00\"},{\"slot\":\"2025-09-24T16:30:00-04:00\"},{\"slot\":\"2025-09-24T17:00:00-04:00\"},{\"slot\":\"2025-09-24T17:30:00-04:00\"}]"
+                },
+                {
+                  "role": "agent",
+                  "content": "Availability for you Please hold on.Good news! There is a slot available at 5:00 PM on September 24th. Would you like me to reschedule your appointment to that time?",
+                  "words": [
+                    {
+                      "word": "Availability ",
+                      "start": 37.081,
+                      "end": 37.65
+                    },
+                    {
+                      "word": "for ",
+                      "start": 37.65,
+                      "end": 37.778
+                    },
+                    {
+                      "word": "you ",
+                      "start": 37.778,
+                      "end": 37.905
+                    },
+                    {
+                      "word": "Please ",
+                      "start": 37.905,
+                      "end": 38.393
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 38.393,
+                      "end": 38.985
+                    },
+                    {
+                      "word": "on.",
+                      "start": 38.985,
+                      "end": 39.368
+                    },
+                    {
+                      "word": "Good ",
+                      "start": 39.41429174804688,
+                      "end": 39.589291748046875
+                    },
+                    {
+                      "word": "news!",
+                      "start": 39.589291748046875,
+                      "end": 40.20429174804688
+                    },
+                    {
+                      "word": " There ",
+                      "start": 40.250208251953126,
+                      "end": 40.41320825195312
+                    },
+                    {
+                      "word": "is ",
+                      "start": 40.41320825195312,
+                      "end": 40.51720825195312
+                    },
+                    {
+                      "word": "a ",
+                      "start": 40.51720825195312,
+                      "end": 40.58720825195312
+                    },
+                    {
+                      "word": "slot ",
+                      "start": 40.58720825195312,
+                      "end": 40.93520825195313
+                    },
+                    {
+                      "word": "available ",
+                      "start": 40.93520825195313,
+                      "end": 41.42320825195313
+                    },
+                    {
+                      "word": "at ",
+                      "start": 41.42320825195313,
+                      "end": 41.53920825195313
+                    },
+                    {
+                      "word": "5:00 ",
+                      "start": 41.53920825195313,
+                      "end": 41.80620825195312
+                    },
+                    {
+                      "word": "PM ",
+                      "start": 41.80620825195312,
+                      "end": 42.201208251953126
+                    },
+                    {
+                      "word": "on ",
+                      "start": 42.201208251953126,
+                      "end": 42.363208251953125
+                    },
+                    {
+                      "word": "September ",
+                      "start": 42.363208251953125,
+                      "end": 42.839208251953124
+                    },
+                    {
+                      "word": "24th.",
+                      "start": 42.839208251953124,
+                      "end": 43.141208251953124
+                    },
+                    {
+                      "word": " Would ",
+                      "start": 43.87254174804688,
+                      "end": 44.12854174804688
+                    },
+                    {
+                      "word": "you ",
+                      "start": 44.12854174804688,
+                      "end": 44.24454174804688
+                    },
+                    {
+                      "word": "like ",
+                      "start": 44.24454174804688,
+                      "end": 44.43054174804688
+                    },
+                    {
+                      "word": "me ",
+                      "start": 44.43054174804688,
+                      "end": 44.55754174804687
+                    },
+                    {
+                      "word": "to ",
+                      "start": 44.55754174804687,
+                      "end": 44.90654174804688
+                    },
+                    {
+                      "word": "reschedule ",
+                      "start": 44.90654174804688,
+                      "end": 45.46354174804687
+                    },
+                    {
+                      "word": "your ",
+                      "start": 45.46354174804687,
+                      "end": 45.614541748046875
+                    },
+                    {
+                      "word": "appointment ",
+                      "start": 45.614541748046875,
+                      "end": 46.020541748046874
+                    },
+                    {
+                      "word": "to ",
+                      "start": 46.020541748046874,
+                      "end": 46.11354174804688
+                    },
+                    {
+                      "word": "that ",
+                      "start": 46.11354174804688,
+                      "end": 46.276541748046874
+                    },
+                    {
+                      "word": "time?",
+                      "start": 46.276541748046874,
+                      "end": 46.84554174804688
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 47.622,
+                      "end": 47.942
+                    }
+                  ]
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "1ffcb2161288b82a",
+                  "name": "Reschedule",
+                  "arguments": "{\"starttime\":\"2025-09-24T17:00:00Z\",\"endtime\":\"2025-09-24T18:00:00Z\",\"phone\":\"+12498005904\",\"clientId\":\"LuminaMedSpaOakville\",\"targetStart\":\"2025-09-24 15:00:00\",\"execution_message\":\"Let me reschedule for you please hold on.\"}"
+                }
+              ],
+              "public_log_url": "https://dxc03zgurdly9.cloudfront.net/2fb2d052d8bf5e29e1009508b5bc6e543da6eca794449368c09891ced8d68565/public.log",
+              "latency": {},
+              "call_cost": {
+                "product_costs": [],
+                "total_duration_seconds": 0,
+                "total_duration_unit_price": 0,
+                "combined_cost": 0
+              },
+              "opt_out_sensitive_data_storage": false,
+              "data_storage_setting": "everything",
+              "opt_in_signed_url": false,
+              "from_number": "+12498005904",
+              "to_number": "+14374945352",
+              "direction": "inbound",
+              "telephony_identifier": {
+                "twilio_call_sid": "CAdcf09b8fad2d25aad8538a370a8e2f57"
+              }
+            },
+            "name": "Reschedule",
+            "args": {
+              "starttime": "2025-09-24T17:00:00Z",
+              "endtime": "2025-09-24T18:00:00Z",
+              "phone": "+12498005904",
+              "clientId": "LuminaMedSpaOakville",
+              "targetStart": "2025-09-24 15:00:00"
+            }
+          },
+          "webhookUrl": "https://n8n.srv899746.hstgr.cloud/webhook/g_Rechedule",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Get Client from Supabase": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Client from Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Client Found": {
+      "main": [
+        [
+          {
+            "node": "Find Old Google Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Client Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Old Google Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Filter Matching Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Matching Event": {
+      "main": [
+        [
+          {
+            "node": "If Old Event Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Old Event Found": {
+      "main": [
+        [
+          {
+            "node": "Delete Old Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Old Event Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Old Event": {
+      "main": [
+        [
+          {
+            "node": "Create New Google Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New Google Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "If Client Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "Code7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code7": {
+      "main": [
+        [
+          {
+            "node": "Code8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code8": {
+      "main": [
+        [
+          {
+            "node": "Code9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code9": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an SMS/MMS/WhatsApp message": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an SMS/MMS/WhatsApp message1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an SMS/MMS/WhatsApp message2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Etc/UTC",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "3413e181-a93a-4d01-9b2a-d85625c2f186",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a23a5a36084a4adf4da38e7db159b4442d0f7fa26992b909bde4e7462f866101"
+  },
+  "id": "6TvM1utBYXcon3x1",
+  "tags": []
+}

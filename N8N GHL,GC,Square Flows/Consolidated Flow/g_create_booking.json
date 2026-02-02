@@ -1,0 +1,5055 @@
+{
+  "name": "g_create_booking",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "g_create_booking",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        -800
+      ],
+      "id": "30334062-d8f5-44fe-8781-8a69a913bd28",
+      "name": "Webhook",
+      "webhookId": "6f8738f2-8cae-46cb-86b8-9127c5d271aa"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cce599d6-779e-436d-9e85-846530cc46a7",
+              "leftValue": "={{ $json.crm_type }}",
+              "rightValue": "NULL",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        -800
+      ],
+      "id": "d40aa228-ed29-4bc7-aec6-b62744ac4016",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.squareup.com/v2/customers/search",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('clientdata').first().json.crm_api_key }}\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {\n    \"filter\": {\n      \"phone_number\": {\n        \"exact\": \"{{ $('Webhook').first().json.body.args.phone }}\"\n      }\n    }\n  },\n  \"limit\": 1\n}\n ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1856,
+        -896
+      ],
+      "id": "a9212031-9484-4108-b391-8ab320163603",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.squareup.com/v2/catalog/search-catalog-items",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('clientdata').first().json.crm_api_key }}\"\n}\n ",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"product_types\": [\"APPOINTMENTS_SERVICE\"],\n  \"limit\": 100\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2304,
+        -976
+      ],
+      "id": "208b7025-e989-4d98-9006-812e3a38b13c",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "01d3ba38-786c-42ff-9744-bae8b9bb1f26",
+              "leftValue": "={{ $json.message }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2752,
+        -976
+      ],
+      "id": "45304858-5df3-4309-9e14-8798f469decd",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.squareup.com/v2/bookings",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-07-16\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('clientdata').first().json.crm_api_key }}\"\n}\n ",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"booking\": {\n    \"customer_id\": \"{{ $('HTTP Request').first().json.customers[0].id }}\",\n    \"start_at\": \"{{ $('Code7').first().json.starttime }}\",\n    \"location_id\": \"{{ $('clientdata').first().json.locations }}\",\n    \"appointment_segments\": [\n      {\n        \"duration_minutes\": {{ $node[\"CalculateDuration\"].json.duration_minutes }},\n        \"team_member_id\": \"{{ $json.id }}\",\n        \"service_variation_id\": \"{{ $('item matching').item.json.variations[0].id }}\",\n        \"service_variation_version\": {{ $('item matching').item.json.variations[0].version }}\n      }\n    ]\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3424,
+        -1040
+      ],
+      "id": "d7cb7a0e-ed80-4eae-9a02-a7cdd0243dfe",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        4096,
+        -896
+      ],
+      "id": "1c5f3ca7-e9c9-423f-a1cb-11f92e5a750b",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6c296bb5-947f-441d-9edc-06fa3fff2404",
+              "leftValue": "={{ $json.isStartEnd }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "dd900829-6062-4a44-abc6-df2bfdc85311",
+              "leftValue": "={{ $json.isNowAfterOrEqualStart }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "e9555c7c-9a5c-473e-bfca-c800c77e7ebb",
+              "leftValue": "={{ $json.isNowWithinRange }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1408,
+        -800
+      ],
+      "id": "540ba4b3-1e16-4846-b484-3a0f32530e91",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1856,
+        -688
+      ],
+      "id": "b384e951-05c1-41d2-b6ce-ca6c5316142a",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "23de22ff-52e9-44b9-b6cb-570474c80f2f",
+              "leftValue": "={{ $json.customers[0].id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        -896
+      ],
+      "id": "a55e6a1c-b5f6-4387-bc4d-64a4df45b2fc",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "Square",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c5146b9f-47c8-4893-aba3-3740c74176f0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Square"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a3bda4b3-06d3-4600-afbf-125df70676e6",
+                    "leftValue": "={{ $json.crm_type }}",
+                    "rightValue": "ghl",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "GoHighLevel"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        512,
+        -704
+      ],
+      "id": "eab97267-8185-4b93-b563-5dc2fd498749",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const startAt = new Date($('Webhook').first().json.body.args.starttime);\nconst endAt = new Date($('Webhook').first().json.body.args.endtime);\nconst now = new Date(); // Current time in UTC\n\nconst isStartEnd = startAt <= endAt;\nconst isNowAfterOrEqualStart = now <= startAt;\nconst isNowWithinRange = now <= startAt && now <= endAt;\n\nreturn [\n  {\n    json: {\n      startAt,\n      endAt,\n      currentTime: now,\n      isStartEnd,\n      isNowAfterOrEqualStart,\n      isNowWithinRange\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -800
+      ],
+      "id": "cbc3a92d-2b4b-4adf-bc00-2d28b899a2ed",
+      "name": "checkTime"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst data = $node[\"Webhook\"].json;\n\n// Support nested args (e.g. inside body)\nconst args = data.args || (data.body && data.body.args);\n\nif (!args || !args.starttime || !args.endtime) {\n  throw new Error(\"Missing 'starttime' or 'endtime' in input.\");\n}\n\nconst start = new Date(args.starttime);\nconst end = new Date(args.endtime);\nconst duration = (end - start) / (1000 * 60);\n\nreturn [\n  {\n    json: {\n      duration_minutes: duration\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -896
+      ],
+      "id": "6aa18a3c-b950-47c3-94e5-34519239792b",
+      "name": "CalculateDuration"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.items;\nconst targetName = $('Webhook').first().json.body.args.Service_name; // Change this to your dynamic or static item name\n// Find the item matching the target name\nconst matchedItem = items.find(item => item.item_data.name === targetName);\n\n// Return variations if item found, else return a message\nif (matchedItem) {\n  return [{ json: { variations: matchedItem.item_data.variations } }];\n} else {\n  return [{ json: { message: `No item found with name \"${targetName}\"` } }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2528,
+        -976
+      ],
+      "id": "dc3241d5-6b43-44ab-975f-7bb1a8904b50",
+      "name": "item matching"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b9b362fa-2351-4983-96ae-bbe153f4899f",
+              "name": "message",
+              "value": "Wrong Start/End Time",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1632,
+        -688
+      ],
+      "id": "3e604c9f-0e95-4ec9-8a16-7ec12d6cdb33",
+      "name": "message"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86eb1770-6e8d-4303-a7b7-e49f6320f8f1",
+              "name": "message",
+              "value": "Booking created successfully",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3872,
+        -1040
+      ],
+      "id": "68fb9d3d-7dc4-4b7f-b9c2-5e99776743ca",
+      "name": "message1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a4dc9cc0-4475-4757-ab1f-c3eee5226359",
+              "name": "message",
+              "value": "Customer not found",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3872,
+        -752
+      ],
+      "id": "245031f7-db24-4582-9941-6f9c1eb6c035",
+      "name": "message2"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "client",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "={{ $json.body.args.clientId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -800
+      ],
+      "id": "d322ca59-ccca-4d74-a465-6e2d8b292a8b",
+      "name": "clientdata",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Webhook').first().json.body.call.to_number }}",
+        "to": "={{ $('Webhook').first().json.body.call.from_number }}",
+        "message": "=Hi {{ $('Get a row').first().json.first_name }}  {{ $('Get a row').first().json.last_name }}, your appointment for \"{{ $('Webhook').first().json.body.args.Service_name }}\" has been booked with {{ $('Webhook').first().json.body.args.given_name }} {{ $('Webhook').first().json.body.args.family_name }}\nTime: \nStart Time: {{ $('Webhook').first().json.body.args.starttime }} \nEnd Time:{{ $('Webhook').first().json.body.args.endtime }}",
+        "options": {}
+      },
+      "name": "Send SMS Confirmation1",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        3648,
+        -1040
+      ],
+      "id": "0423a076-bf62-447c-99a0-9ec115fe3d9a",
+      "credentials": {
+        "twilioApi": {
+          "id": "co7Xlb1CtK2sVaHl",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- Get webhook input ---\nconst data = $node[\"Webhook\"].json;\nconsole.log('Webhook data:', JSON.stringify(data, null, 2));\n\n// Validate input\nif (!data.body || !data.body.args || typeof data.body.args !== 'object') {\n    throw new Error('Missing or invalid \"body.args\" in webhook data: ' + JSON.stringify(data, null, 2));\n}\n\n// Extract start/end times\nconst startUTC = data.body.args.starttime;\nconst endUTC = data.body.args.endtime;\nif (!startUTC || !endUTC) {\n    throw new Error('Missing starttime or endtime in webhook data: ' + JSON.stringify(data.body.args, null, 2));\n}\n\n// --- Get timezone from Supabase node ---\nconst zone = $input.first().json;\nconst timeZone = zone.Time_Zone;  // Can be \"America/Toronto\" OR \"-04:00\"\nif (!timeZone) {\n    throw new Error('Missing Time_Zone in Supabase data: ' + JSON.stringify(zone, null, 2));\n}\n\n// --- Helper: Ensure UTC format ---\nfunction ensureUTCFormat(dateString) {\n    if (!dateString.endsWith('Z') && !dateString.match(/[+-]\\d{2}:\\d{2}$/)) {\n        return dateString + 'Z';\n    }\n    return dateString;\n}\n\nconst startUTCFormatted = ensureUTCFormat(startUTC);\nconst endUTCFormatted = ensureUTCFormat(endUTC);\n\n// Convert to Date objects\nconst startDate = new Date(startUTCFormatted);\nconst endDate = new Date(endUTCFormatted);\n\nif (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {\n    throw new Error(`Invalid starttime or endtime format: ${startUTC}, ${endUTC}`);\n}\n\n// --- Conversion Helpers ---\n// Case 1: Fixed UTC offset like \"-04:00\" or \"+05:30\"\nfunction convertWithOffset(date, offsetString) {\n    const match = offsetString.match(/([+-])(\\d{2}):(\\d{2})/);\n    if (!match) throw new Error(\"Invalid offset format: \" + offsetString);\n    \n    const sign = match[1] === \"+\" ? 1 : -1;\n    const hours = parseInt(match[2], 10);\n    const minutes = parseInt(match[3], 10);\n    const totalOffsetMinutes = sign * (hours * 60 + minutes);\n    \n    // FIXED: Subtract the offset from UTC time\n    // For timezone \"-04:00\", this subtracts -240 minutes (adds 240 minutes)\n    const convertedDate = new Date(date.getTime() - totalOffsetMinutes * 60 * 1000);\n    return formatDate(convertedDate);\n}\n\n// Case 2: IANA time zone like \"America/Toronto\"\nfunction convertWithIANA(date, tz) {\n    const parts = new Intl.DateTimeFormat('en-CA', {\n        timeZone: tz,\n        hour12: false,\n        year: \"numeric\",\n        month: \"2-digit\",\n        day: \"2-digit\",\n        hour: \"2-digit\",\n        minute: \"2-digit\",\n        second: \"2-digit\"\n    }).formatToParts(date);\n    \n    const lookup = Object.fromEntries(parts.map(p => [p.type, p.value]));\n    return `${lookup.year}-${lookup.month}-${lookup.day}T${lookup.hour}:${lookup.minute}:${lookup.second}`;\n}\n\n// Common formatter\nfunction formatDate(date) {\n    const year = date.getUTCFullYear();\n    const month = String(date.getUTCMonth() + 1).padStart(2, '0');\n    const day = String(date.getUTCDate()).padStart(2, '0');\n    const hour = String(date.getUTCHours()).padStart(2, '0');\n    const minute = String(date.getUTCMinutes()).padStart(2, '0');\n    const second = String(date.getUTCSeconds()).padStart(2, '0');\n    return `${year}-${month}-${day}T${hour}:${minute}:${second}`;\n}\n\n// --- Conversion Logic ---\nlet formattedStart, formattedEnd;\n\nif (/^[+-]\\d{2}:\\d{2}$/.test(timeZone)) {\n    // Fixed offset\n    formattedStart = convertWithOffset(startDate, timeZone);\n    formattedEnd = convertWithOffset(endDate, timeZone);\n    console.log(`Converted using offset ${timeZone}`);\n} else {\n    // IANA zone\n    formattedStart = convertWithIANA(startDate, timeZone);\n    formattedEnd = convertWithIANA(endDate, timeZone);\n    console.log(`Converted using IANA zone ${timeZone}`);\n}\n\n// --- Return ---\nreturn [{\n    formattedStartTime: formattedStart,\n    formattedEndTime: formattedEnd,\n    usedTimeZone: timeZone,\n    originalStartTime: startUTC,\n    originalEndTime: endUTC\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -992
+      ],
+      "id": "275ef324-ba51-438d-b625-a76be46c2b23",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data\nconst data = $node[\"clientdata\"].json;\n\nconst tz = data.Time_Zone  // Example input, you can change it\n\n// Mapping offsets to common abbreviations\nconst offsetToTZ = {\n  \"-12:00\": \"AoE\",      // Anywhere on Earth\n  \"-11:00\": \"NUT\",      // Niue Time\n  \"-10:00\": \"HST\",      // Hawaii Standard Time\n  \"-09:00\": \"AKST\",     // Alaska Standard Time\n  \"-08:00\": \"PST\",      // Pacific Standard Time\n  \"-07:00\": \"MST\",      // Mountain Standard Time\n  \"-06:00\": \"CST\",      // Central Standard Time\n  \"-05:00\": \"EST\",      // Eastern Standard Time\n  \"-04:00\": \"AST/EDT\",  // Atlantic Standard / Eastern Daylight\n  \"-03:00\": \"ART\",      // Argentina Time\n  \"-02:00\": \"GST\",      // South Georgia Time\n  \"-01:00\": \"AZOT\",     // Azores Time\n  \"+00:00\": \"UTC\",      // Coordinated Universal Time\n  \"+01:00\": \"CET\",      // Central European Time\n  \"+02:00\": \"EET\",      // Eastern European Time\n  \"+03:00\": \"MSK\",      // Moscow Standard Time\n  \"+04:00\": \"GST\",      // Gulf Standard Time\n  \"+05:00\": \"PKT\",      // Pakistan Standard Time\n  \"+05:30\": \"IST\",      // India Standard Time\n  \"+06:00\": \"BST\",      // Bangladesh Standard Time\n  \"+07:00\": \"ICT\",      // Indochina Time\n  \"+08:00\": \"CST/SGT\",  // China Standard / Singapore Time\n  \"+09:00\": \"JST\",      // Japan Standard Time\n  \"+09:30\": \"ACST\",     // Australian Central Standard Time\n  \"+10:00\": \"AEST\",     // Australian Eastern Standard Time\n  \"+11:00\": \"SBT\",      // Solomon Islands Time\n  \"+12:00\": \"NZST\",     // New Zealand Standard Time\n};\n\n// Get abbreviation or fallback\nconst abbreviation = offsetToTZ[tz] || \"Unknown Timezone\";\n\nreturn [{ offset: tz, abbreviation }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -992
+      ],
+      "id": "4eee483f-b751-4860-bdf1-962c0bb4fa39",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('clientdata').item.json.calendar_id }}",
+          "mode": "id"
+        },
+        "start": "={{ $json.formattedStartTime }}",
+        "end": "={{ $json.formattedEndTime }}",
+        "additionalFields": {
+          "description": "={{ $('Webhook').item.json.body.args.first_name }} {{ $('Webhook').item.json.body.args.last_name }} Booked {{ $('Webhook').item.json.body.args.description }}",
+          "summary": "={{ $('Webhook').item.json.body.args.title }}"
+        }
+      },
+      "name": "Create Google Calendar Event1",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        736,
+        -992
+      ],
+      "id": "d9949812-be72-44c5-9946-188cd28cd2cf",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "OgBzpLjgpwAE07vo",
+          "name": "projects.metaviz"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Webhook').item.json.body.call.to_number }}",
+        "to": "={{ $('Webhook').item.json.body.call.from_number }}",
+        "message": "=Hi {{ $('Webhook').item.json.body.args.first_name }} {{ $('Webhook').item.json.body.args.last_name }} , your appointment for \"{{ $('Create Google Calendar Event1').item.json.summary }}\" has been booked.  \n\nDate: {{ $('Code').item.json.originalStartTime.split(\"T\")[0] }}\n\nTime: {{ $('Code').item.json.originalStartTime.split(\"T\")[1] }} {{ $json.abbreviation }}\n\nWith: {{ $('clientdata').item.json.business_name }}",
+        "options": {}
+      },
+      "name": "Send SMS Confirmation2",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -992
+      ],
+      "id": "124f570f-8e78-4abc-8da9-bc0819f8041c",
+      "credentials": {
+        "twilioApi": {
+          "id": "co7Xlb1CtK2sVaHl",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Respond Success1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1408,
+        -992
+      ],
+      "id": "f0ef5983-709c-4732-9b69-9fd2d7738ebd"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "customers",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "keyValue": "={{ $('Webhook').item.json.body.args.phone }}"
+            },
+            {
+              "keyName": "client_id",
+              "keyValue": "={{ $('Webhook').item.json.body.args.clientId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        960,
+        -496
+      ],
+      "id": "7f3090d1-10d8-4d81-923b-2e3febfddc5e",
+      "name": "Get a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data\nconst items = $input.all();\n\nreturn items.map(item => {\n  const data = item.json;\n\n  // Offset from Supabase (e.g. \"-04:00\")\n  const offset = $('clientdata').first().json.Time_Zone || \"Z\";\n\n  // Convert start and end\n  const start = new Date(data.starttime)\n    .toISOString()\n    .replace(\"Z\", offset);\n\n  const end = new Date(data.endtime)\n    .toISOString()\n    .replace(\"Z\", offset);\n\n  return {\n    json: {\n      convertedStart: start,\n      convertedEnd: end,\n      usedTimeZone: offset\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        -496
+      ],
+      "id": "cd740629-5888-4b36-84a9-5f90ea5b1a87",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data\nconst items = $input.all();\n\nreturn items.map(item => {\n  const data = item.json;\n\n  // Remove \".000\" if present\n  const start = data.convertedStart.replace(\".000\", \"\");\n  const end = data.convertedEnd.replace(\".000\", \"\");\n\n  return {\n    json: {\n      convertedStart: start,\n      convertedEnd: end,\n      usedTimeZone: data.usedTimeZone\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -496
+      ],
+      "id": "ba884233-f567-44c0-a92b-2b2820c0bdca",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/calendars/events/appointments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$('Code4').item.json.access_token}}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"calendarId\": \"{{$('clientdata').first().json.calendar_id}}\",\n  \"locationId\": \"{{$('clientdata').first().json.locations}}\",\n  \"contactId\": \"{{$('Get a row1').first().json.Contact_id}}\",\n  \"startTime\": \"{{ $json.convertedStart }}\",\n   \"endTime\": \"{{ $json.convertedEnd }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1856,
+        -496
+      ],
+      "id": "7594d8f0-2ae2-4626-85d3-b2e42b08f977",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if crm_api_key exists and is not undefined or \"undefined\"\nif (!$json[\"crm_api_key\"] || $json[\"crm_api_key\"] === \"undefined\") {\n  return [{ json: { error: \"crm_api_key is undefined or missing\" } }];\n}\n\ntry {\n  // Parse the crm_api_key field (it's a JSON string with an array inside)\n  const crmApiKey = JSON.parse($json[\"crm_api_key\"]);\n\n  // Check if crmApiKey is an array and has at least one element\n  if (!Array.isArray(crmApiKey) || crmApiKey.length === 0) {\n    return [{ json: { error: \"crm_api_key is not a valid array or is empty\" } }];\n  }\n\n  // The first element of the array is the response object\n  const response = crmApiKey[0];\n\n  // Return the parsed response with access_token, refresh_token, etc.\n  return [{ json: response }];\n} catch (error) {\n  // Return error details for debugging\n  return [{ json: { error: \"Failed to parse JSON\", details: error.message } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -464
+      ],
+      "id": "4c821ca9-218a-4db9-9520-33d2452e84db",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhook_data = $node[\"Webhook\"].json;\n\nreturn {\n  starttime: $('Webhook').first().json.body.args.starttime,\n  endtime: $('Webhook').first().json.body.args.endtime\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -496
+      ],
+      "id": "f41f0070-5554-4ab9-9009-c11d655390cd",
+      "name": "Code5"
+    },
+    {
+      "parameters": {
+        "from": "={{ $('Webhook').item.json.body.call.to_number }}",
+        "to": "={{ $('Webhook').item.json.body.call.from_number }}",
+        "message": "=Hi {{ $('Get a row1').item.json.first_name }} {{ $('Get a row1').item.json.last_name }} , your appointment Booked.  \nWith: {{ $('clientdata').item.json.business_name }}\nTime:\nStart At:\n{{ $('Webhook').item.json.body.args.starttime }}\nEnd At:\n{{ $('Webhook').item.json.body.args.endtime }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        -496
+      ],
+      "id": "c4585100-42c6-4d87-ba47-65be3ca7bf11",
+      "name": "Send an SMS/MMS/WhatsApp message",
+      "credentials": {
+        "twilioApi": {
+          "id": "co7Xlb1CtK2sVaHl",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.squareup.com/v2/team-members/search",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"accept\": \"application/json\",\n  \"Square-Version\": \"2025-08-20\",\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer {{ $('clientdata').first().json.crm_api_key }}\"\n}\n ",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {\n    \"filter\": {\n      \"location_ids\": [\"{{ $('clientdata').first().json.locations }}\"]\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2976,
+        -1040
+      ],
+      "id": "a734e6dd-cae3-4b4b-975e-ce6e7f558276",
+      "name": "HTTP Request4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the data from previous node\nconst data = $json;  \n\n// Desired name\nconst targetGiven =$('Webhook').first().json.body.args.given_name;\nconst targetFamily = $('Webhook').first().json.body.args.family_name;\n\n// Handle both array and object response\nconst teamMembers = Array.isArray(data) \n  ? data[0].team_members \n  : data.team_members;\n\n// Find the matching team member\nconst found = teamMembers.find(\n  member =>\n    member.given_name === targetGiven &&\n    member.family_name === targetFamily\n);\n\nreturn found\n  ? { id: found.id, given_name: found.given_name, family_name: found.family_name }\n  : { error: \"No matching team member found\" };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3200,
+        -1040
+      ],
+      "id": "0556857b-aa62-4ad4-9013-741b38358373",
+      "name": "Code6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const client_credential = $node[\"clientdata\"].json;\nconst webhook_data = $node[\"Webhook\"].json;\n\n// Function to adjust time based on timezone\nfunction adjustTimeWithTimezone(startTime, endTime, timeZone) {\n  // Use default timezone if undefined or invalid\n  const validTimeZone = typeof timeZone === 'string' && /^[-+]\\d{2}:\\d{2}$/.test(timeZone) ? timeZone :  $('clientdata').first().json.Time_Zone;\n  \n  // Parse the timezone offset (e.g., \"-04:00\" or \"+04:00\")\n  const sign = validTimeZone.startsWith('-') ? 1 : -1; // Negative timezone becomes positive, positive becomes negative\n  const [hours, minutes] = validTimeZone.replace(/[-+]/, '').split(':').map(Number);\n  const offsetMs = (hours * 60 + minutes) * 60 * 1000 * sign;\n\n  // Parse the start and end times\n  const startDate = new Date(startTime);\n  const endDate = new Date(endTime);\n\n  // Adjust times by adding the offset\n  const adjustedStart = new Date(startDate.getTime() + offsetMs);\n  const adjustedEnd = new Date(endDate.getTime() + offsetMs);\n\n  // Format the adjusted times back to ISO string\n  return {\n    starttime: adjustedStart.toISOString(),\n    endtime: adjustedEnd.toISOString()\n  };\n}\n\n// Ensure webhook_data is an array\nconst webhookArray = Array.isArray(webhook_data) ? webhook_data : [webhook_data];\n\n// Process the webhook data\nconst result = webhookArray.map(item => {\n  const timeZone = client_credential[0]?.Time_Zone; // Get timezone, will validate in function\n  const { starttime, endtime } = item.body.args;\n\n  // Adjust the start and end times\n  const adjustedTimes = adjustTimeWithTimezone(starttime, endtime, timeZone);\n\n  // Update the item with adjusted times\n  return {\n\n        starttime: adjustedTimes.starttime,\n        endtime: adjustedTimes.endtime\n      }\n    });\n\n// Return the modified data\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -800
+      ],
+      "id": "dda09f05-a2ac-483e-a89b-3997618b7844",
+      "name": "Code7"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "customers",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "keyValue": "={{ $('Webhook').item.json.body.args.phone }}"
+            },
+            {
+              "keyName": "agent_id",
+              "keyValue": "={{ $('Webhook').item.json.body.call.agent_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        736,
+        -800
+      ],
+      "id": "515dfba4-1a8b-4572-892f-0dd2a82b8b16",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gvy78sNnKp8tzgrQ",
+          "name": "Supabase Rynova"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2304,
+        -496
+      ],
+      "id": "7bd6a003-8b71-4b24-b888-fcf4dee14ea6",
+      "name": "Respond to Webhook2"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv899746.hstgr.cloud",
+            "user-agent": "axios/1.11.0",
+            "content-length": "48518",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "100.20.5.228",
+            "x-forwarded-host": "n8n.srv899746.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "1f699411ba4c",
+            "x-real-ip": "100.20.5.228",
+            "x-retell-signature": "v=1758622068452,d=9f27eaa5ef0fbdf3a5c4401fbfae881c49337c02289121d9536b33c6de98111c"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "call": {
+              "call_id": "call_e705ced0c7ecf4c8b0670fbb2cf",
+              "call_type": "phone_call",
+              "agent_id": "agent_80a7e5ddade104137ac8aba68c",
+              "agent_version": 0,
+              "agent_name": "GHL-LuminaMedSpaOakville",
+              "retell_llm_dynamic_variables": {
+                "twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "twilio-callsid": "CA782a06e86d55b9ef99915cf7799b344c",
+                "first_name": "",
+                "last_name": "",
+                "customer_email": "",
+                "customer_id": "",
+                "preferred_service": "",
+                "preferred_time_slot": "",
+                "total_visits": "",
+                "total_spent": "",
+                "last_visit_date": "",
+                "customer_notes": "",
+                "account_status": "",
+                "customer_status": "new"
+              },
+              "custom_sip_headers": {
+                "x-twilio-accountsid": "ACc92e22ab20b30a0838c9689e8cfcbc2b",
+                "x-twilio-callsid": "CA782a06e86d55b9ef99915cf7799b344c"
+              },
+              "call_status": "ongoing",
+              "start_timestamp": 1758621901366,
+              "transcript": "Agent: Hi, Lumina MedSpa here! How can I help you today?\nUser: I want to book an appointment.\nAgent: Sure! What service would you like to book today?\nUser: What services are available?\nUser: need facial treatment for my face.\nAgent: Got it! For facial treatments, we offer a few options:\n\n1. Clinical Facial (60 min) - Customized cleanse, exfoliation, extractions, massage, targeted mask, and finishing products.\nUser: Yeah. \nAgent:  It's $169.00.\nUser: I need clinical\nUser: I need clinical session.\nAgent: Okay, a Clinical Facial! That's $169.00 and takes about 60 minutes. Sound good?\nUser: Yeah.\nAgent: Great! Would you like to come to our Oakville location at 310 Cornwall Rd?\nUser: Yeah.\nAgent: Perfect! Which staff member would you like to book with? We have Maya Patel, Alex \nUser: Olivia Chen.\nAgent: Alright, Olivia Chen it is! When were you hoping to come in?\nUser: Tomorrow.\nAgent: Let me check Availability \nAgent: for you Please hold on.We have several slots available tomorrow. How about 9:00 AM, 10:30 AM, or 1:00 PM? Let me know what works best for you!\nUser: Two PM.\nAgent: Got it! We'll book you for 2:00 PM tomorrow. Since this is your first visit, I'll need to collect a few details.What's your first name?\nUser: It's John Doe.\nAgent: Thanks, John! Can you spell your last name for me, just to make sure I have it right?\nUser: D o e.\nAgent: Perfect, that's D-O-E, right? Now, what's your email address?\nUser: It's first name, last name at gmail dot com.\nAgent: Got it! So your email is johndoe@gmail.com, is that correct?\nUser: Yeah.\nAgent: Great! Can I use the number you're calling from, +12498005904, for your profile?\nUser: Yeah. Yeah.\nAgent: Let me create your \nAgent: profile first. please hold on.Awesome! Your profile is all set. Just to confirm — you're booking a Clinical Facial on Wednesday, September 24th at 2:00 PM, at our Oakville location, with Olivia Chen, under the name John Doe, email johndoe@gmail.com. Total is $169.00, and it'll take about 60 minutes. Sound good?\nUser: Yeah perfect\nAgent: Let me book \n",
+              "transcript_object": [
+                {
+                  "role": "agent",
+                  "content": "Hi, Lumina MedSpa here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi, ",
+                      "start": 1.289,
+                      "end": 1.579
+                    },
+                    {
+                      "word": "Lumina ",
+                      "start": 1.579,
+                      "end": 1.869
+                    },
+                    {
+                      "word": "MedSpa ",
+                      "start": 1.869,
+                      "end": 2.171
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.171,
+                      "end": 2.659
+                    },
+                    {
+                      "word": " How ",
+                      "start": 2.704625,
+                      "end": 2.855625
+                    },
+                    {
+                      "word": "can ",
+                      "start": 2.855625,
+                      "end": 2.995625
+                    },
+                    {
+                      "word": "I ",
+                      "start": 2.995625,
+                      "end": 3.064625
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.064625,
+                      "end": 3.262625
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.262625,
+                      "end": 3.389625
+                    },
+                    {
+                      "word": "today?",
+                      "start": 3.389625,
+                      "end": 3.958625
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to book an appointment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 13.966,
+                      "end": 14.286
+                    },
+                    {
+                      "word": "want ",
+                      "start": 14.286,
+                      "end": 14.526
+                    },
+                    {
+                      "word": "to ",
+                      "start": 14.526,
+                      "end": 14.685998999999999
+                    },
+                    {
+                      "word": "book ",
+                      "start": 14.685998999999999,
+                      "end": 14.765998999999999
+                    },
+                    {
+                      "word": "an ",
+                      "start": 14.765998999999999,
+                      "end": 14.926
+                    },
+                    {
+                      "word": "appointment.",
+                      "start": 14.926,
+                      "end": 15.245999999999999
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Sure! What service would you like to book today?",
+                  "words": [
+                    {
+                      "word": "Sure!",
+                      "start": 16.57,
+                      "end": 16.988
+                    },
+                    {
+                      "word": " What ",
+                      "start": 17.000416748046874,
+                      "end": 17.255416748046876
+                    },
+                    {
+                      "word": "service ",
+                      "start": 17.255416748046876,
+                      "end": 17.580416748046876
+                    },
+                    {
+                      "word": "would ",
+                      "start": 17.580416748046876,
+                      "end": 17.743416748046876
+                    },
+                    {
+                      "word": "you ",
+                      "start": 17.743416748046876,
+                      "end": 17.859416748046876
+                    },
+                    {
+                      "word": "like ",
+                      "start": 17.859416748046876,
+                      "end": 18.010416748046875
+                    },
+                    {
+                      "word": "to ",
+                      "start": 18.010416748046875,
+                      "end": 18.091416748046875
+                    },
+                    {
+                      "word": "book ",
+                      "start": 18.091416748046875,
+                      "end": 18.265416748046874
+                    },
+                    {
+                      "word": "today?",
+                      "start": 18.265416748046874,
+                      "end": 18.846416748046874
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "What services are available?",
+                  "words": [
+                    {
+                      "word": "What ",
+                      "start": 23.085999,
+                      "end": 23.485999
+                    },
+                    {
+                      "word": "services ",
+                      "start": 23.485999,
+                      "end": 23.805998
+                    },
+                    {
+                      "word": "are ",
+                      "start": 23.805998,
+                      "end": 24.125999999999998
+                    },
+                    {
+                      "word": "available?",
+                      "start": 24.125999999999998,
+                      "end": 24.366
+                    }
+                  ]
+                },
+                {
+                  "role": "user",
+                  "content": "need facial treatment for my face.",
+                  "words": [
+                    {
+                      "word": "need ",
+                      "start": 25.165999,
+                      "end": 25.645998
+                    },
+                    {
+                      "word": "facial ",
+                      "start": 25.645998,
+                      "end": 26.285999999999998
+                    },
+                    {
+                      "word": "treatment ",
+                      "start": 26.285999999999998,
+                      "end": 26.766
+                    },
+                    {
+                      "word": "for ",
+                      "start": 26.766,
+                      "end": 27.006
+                    },
+                    {
+                      "word": "my ",
+                      "start": 27.006,
+                      "end": 27.165999
+                    },
+                    {
+                      "word": "face.",
+                      "start": 27.165999,
+                      "end": 27.325999
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Got it! For facial treatments, we offer a few options:\n\n1. Clinical Facial (60 min) - Customized cleanse, exfoliation, extractions, massage, targeted mask, and finishing products.",
+                  "words": [
+                    {
+                      "word": "Got ",
+                      "start": 28.839,
+                      "end": 29.082
+                    },
+                    {
+                      "word": "it!",
+                      "start": 29.082,
+                      "end": 29.466
+                    },
+                    {
+                      "word": " For ",
+                      "start": 29.511625,
+                      "end": 29.697625
+                    },
+                    {
+                      "word": "facial ",
+                      "start": 29.697625,
+                      "end": 29.976625
+                    },
+                    {
+                      "word": "treatments, ",
+                      "start": 29.976625,
+                      "end": 30.394625
+                    },
+                    {
+                      "word": "we ",
+                      "start": 30.394625,
+                      "end": 30.580625
+                    },
+                    {
+                      "word": "offer ",
+                      "start": 30.580625,
+                      "end": 30.858625
+                    },
+                    {
+                      "word": "a ",
+                      "start": 30.858625,
+                      "end": 30.928625
+                    },
+                    {
+                      "word": "few ",
+                      "start": 30.928625,
+                      "end": 31.125625
+                    },
+                    {
+                      "word": "options:\n",
+                      "start": 31.125625,
+                      "end": 32.576625
+                    },
+                    {
+                      "word": "\n1. ",
+                      "start": 32.577125,
+                      "end": 32.577125
+                    },
+                    {
+                      "word": "Clinical ",
+                      "start": 32.623125,
+                      "end": 33.041125
+                    },
+                    {
+                      "word": "Facial ",
+                      "start": 33.041125,
+                      "end": 33.459125
+                    },
+                    {
+                      "word": "(60 ",
+                      "start": 33.459125,
+                      "end": 33.842125
+                    },
+                    {
+                      "word": "min) ",
+                      "start": 33.842125,
+                      "end": 34.632125
+                    },
+                    {
+                      "word": "- ",
+                      "start": 34.632125,
+                      "end": 35.224125
+                    },
+                    {
+                      "word": "Customized ",
+                      "start": 35.224125,
+                      "end": 35.654125
+                    },
+                    {
+                      "word": "cleanse, ",
+                      "start": 35.654125,
+                      "end": 36.408125
+                    },
+                    {
+                      "word": "exfoliation, ",
+                      "start": 36.408125,
+                      "end": 37.163125
+                    },
+                    {
+                      "word": "extractions, ",
+                      "start": 37.163125,
+                      "end": 37.755125
+                    },
+                    {
+                      "word": "massage, ",
+                      "start": 37.755125,
+                      "end": 38.173125
+                    },
+                    {
+                      "word": "targeted ",
+                      "start": 38.173125,
+                      "end": 38.533125
+                    },
+                    {
+                      "word": "mask, ",
+                      "start": 38.533125,
+                      "end": 38.800125
+                    },
+                    {
+                      "word": "and ",
+                      "start": 38.800125,
+                      "end": 39.160125
+                    },
+                    {
+                      "word": "finishing ",
+                      "start": 39.160125,
+                      "end": 39.915125
+                    },
+                    {
+                      "word": "products.",
+                      "start": 39.914625,
+                      "end": 39.914625
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. ",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 39.966,
+                      "end": 40.445997999999996
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": " It's $169.00.",
+                  "words": [
+                    {
+                      "word": " It's ",
+                      "start": 39.960625,
+                      "end": 40.355625
+                    },
+                    {
+                      "word": "$169.00.",
+                      "start": 40.355625,
+                      "end": 40.587625
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I need clinical",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 40.445997999999996,
+                      "end": 41.006
+                    },
+                    {
+                      "word": "need ",
+                      "start": 41.006,
+                      "end": 41.406
+                    },
+                    {
+                      "word": "clinical",
+                      "start": 41.406,
+                      "end": 41.966
+                    }
+                  ]
+                },
+                {
+                  "role": "user",
+                  "content": "I need clinical session.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 42.566,
+                      "end": 42.806002
+                    },
+                    {
+                      "word": "need ",
+                      "start": 42.806002,
+                      "end": 43.046
+                    },
+                    {
+                      "word": "clinical ",
+                      "start": 43.046,
+                      "end": 43.525999999999996
+                    },
+                    {
+                      "word": "session.",
+                      "start": 43.525999999999996,
+                      "end": 43.926
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Okay, a Clinical Facial! That's $169.00 and takes about 60 minutes. Sound good?",
+                  "words": [
+                    {
+                      "word": "Okay, ",
+                      "start": 45.618,
+                      "end": 45.885
+                    },
+                    {
+                      "word": "a ",
+                      "start": 45.885,
+                      "end": 45.955
+                    },
+                    {
+                      "word": "Clinical ",
+                      "start": 45.955,
+                      "end": 46.28
+                    },
+                    {
+                      "word": "Facial!",
+                      "start": 46.28,
+                      "end": 46.872
+                    },
+                    {
+                      "word": " That's ",
+                      "start": 46.91775,
+                      "end": 47.17375
+                    },
+                    {
+                      "word": "$169.00 ",
+                      "start": 47.17375,
+                      "end": 47.34775
+                    },
+                    {
+                      "word": "and ",
+                      "start": 47.34775,
+                      "end": 47.59175
+                    },
+                    {
+                      "word": "takes ",
+                      "start": 47.59175,
+                      "end": 47.69575
+                    },
+                    {
+                      "word": "about ",
+                      "start": 47.69575,
+                      "end": 48.04475
+                    },
+                    {
+                      "word": "60 ",
+                      "start": 48.04475,
+                      "end": 48.24175
+                    },
+                    {
+                      "word": "minutes.",
+                      "start": 48.24175,
+                      "end": 48.61275
+                    },
+                    {
+                      "word": " Sound ",
+                      "start": 50.284875,
+                      "end": 50.598875
+                    },
+                    {
+                      "word": "good?",
+                      "start": 50.598875,
+                      "end": 51.143875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 6
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 51.736002,
+                      "end": 52.056002
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Great! Would you like to come to our Oakville location at 310 Cornwall Rd?",
+                  "words": [
+                    {
+                      "word": "Great!",
+                      "start": 53.459,
+                      "end": 54.051
+                    },
+                    {
+                      "word": " Would ",
+                      "start": 54.097166748046874,
+                      "end": 54.295166748046874
+                    },
+                    {
+                      "word": "you ",
+                      "start": 54.295166748046874,
+                      "end": 54.411166748046874
+                    },
+                    {
+                      "word": "like ",
+                      "start": 54.411166748046874,
+                      "end": 54.539166748046874
+                    },
+                    {
+                      "word": "to ",
+                      "start": 54.539166748046874,
+                      "end": 54.62016674804688
+                    },
+                    {
+                      "word": "come ",
+                      "start": 54.62016674804688,
+                      "end": 54.79416674804688
+                    },
+                    {
+                      "word": "to ",
+                      "start": 54.79416674804688,
+                      "end": 54.910166748046876
+                    },
+                    {
+                      "word": "our ",
+                      "start": 54.910166748046876,
+                      "end": 55.200166748046875
+                    },
+                    {
+                      "word": "Oakville ",
+                      "start": 55.200166748046875,
+                      "end": 55.59516674804688
+                    },
+                    {
+                      "word": "location ",
+                      "start": 55.59516674804688,
+                      "end": 56.08316674804688
+                    },
+                    {
+                      "word": "at ",
+                      "start": 56.08316674804688,
+                      "end": 56.19916674804688
+                    },
+                    {
+                      "word": "310 ",
+                      "start": 56.19916674804688,
+                      "end": 56.45416674804687
+                    },
+                    {
+                      "word": "Cornwall ",
+                      "start": 56.45416674804687,
+                      "end": 56.75616674804687
+                    },
+                    {
+                      "word": "Rd?",
+                      "start": 56.75616674804687,
+                      "end": 56.86116674804688
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 7
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 60.246,
+                      "end": 60.486002
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Perfect! Which staff member would you like to book with? We have Maya Patel, Alex ",
+                  "words": [
+                    {
+                      "word": "Perfect!",
+                      "start": 62.522,
+                      "end": 63.08
+                    },
+                    {
+                      "word": " Which ",
+                      "start": 63.12570825195313,
+                      "end": 63.36970825195313
+                    },
+                    {
+                      "word": "staff ",
+                      "start": 63.36970825195313,
+                      "end": 63.65970825195313
+                    },
+                    {
+                      "word": "member ",
+                      "start": 63.65970825195313,
+                      "end": 63.88070825195312
+                    },
+                    {
+                      "word": "would ",
+                      "start": 63.88070825195312,
+                      "end": 64.01970825195312
+                    },
+                    {
+                      "word": "you ",
+                      "start": 64.01970825195312,
+                      "end": 64.13670825195312
+                    },
+                    {
+                      "word": "like ",
+                      "start": 64.13670825195312,
+                      "end": 64.27570825195312
+                    },
+                    {
+                      "word": "to ",
+                      "start": 64.27570825195312,
+                      "end": 64.35670825195312
+                    },
+                    {
+                      "word": "book ",
+                      "start": 64.35670825195312,
+                      "end": 64.55370825195313
+                    },
+                    {
+                      "word": "with?",
+                      "start": 64.55370825195313,
+                      "end": 65.12270825195313
+                    },
+                    {
+                      "word": " We ",
+                      "start": 65.15808325195313,
+                      "end": 65.46008325195312
+                    },
+                    {
+                      "word": "have ",
+                      "start": 65.46008325195312,
+                      "end": 65.98208325195313
+                    },
+                    {
+                      "word": "Maya ",
+                      "start": 65.98208325195313,
+                      "end": 66.29608325195312
+                    },
+                    {
+                      "word": "Patel, ",
+                      "start": 66.29608325195312,
+                      "end": 66.88808325195312
+                    },
+                    {
+                      "word": "Alex ",
+                      "start": 66.88808325195312,
+                      "end": 67.72408325195312
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 8
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Olivia Chen.",
+                  "words": [
+                    {
+                      "word": "Olivia ",
+                      "start": 67.55600000000001,
+                      "end": 68.036005
+                    },
+                    {
+                      "word": "Chen.",
+                      "start": 68.036005,
+                      "end": 68.35600500000001
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Alright, Olivia Chen it is! When were you hoping to come in?",
+                  "words": [
+                    {
+                      "word": "Alright, ",
+                      "start": 69.956,
+                      "end": 70.281
+                    },
+                    {
+                      "word": "Olivia ",
+                      "start": 70.281,
+                      "end": 70.56
+                    },
+                    {
+                      "word": "Chen ",
+                      "start": 70.56,
+                      "end": 70.722
+                    },
+                    {
+                      "word": "it ",
+                      "start": 70.722,
+                      "end": 70.838
+                    },
+                    {
+                      "word": "is!",
+                      "start": 70.838,
+                      "end": 71.314
+                    },
+                    {
+                      "word": " When ",
+                      "start": 71.36020825195313,
+                      "end": 71.55820825195312
+                    },
+                    {
+                      "word": "were ",
+                      "start": 71.55820825195312,
+                      "end": 71.68620825195312
+                    },
+                    {
+                      "word": "you ",
+                      "start": 71.68620825195312,
+                      "end": 71.81320825195313
+                    },
+                    {
+                      "word": "hoping ",
+                      "start": 71.81320825195313,
+                      "end": 72.05720825195313
+                    },
+                    {
+                      "word": "to ",
+                      "start": 72.05720825195313,
+                      "end": 72.13820825195313
+                    },
+                    {
+                      "word": "come ",
+                      "start": 72.13820825195313,
+                      "end": 72.28920825195313
+                    },
+                    {
+                      "word": "in?",
+                      "start": 72.28920825195313,
+                      "end": 72.75420825195313
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 9
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Tomorrow.",
+                  "words": [
+                    {
+                      "word": "Tomorrow.",
+                      "start": 75.485995,
+                      "end": 75.72599000000001
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me check Availability ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 79.493,
+                      "end": 79.644
+                    },
+                    {
+                      "word": "me ",
+                      "start": 79.644,
+                      "end": 79.725
+                    },
+                    {
+                      "word": "check ",
+                      "start": 79.725,
+                      "end": 79.923
+                    },
+                    {
+                      "word": "Availability ",
+                      "start": 79.923,
+                      "end": 80.492
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 10
+                  }
+                },
+                {
+                  "role": "agent",
+                  "content": "for you Please hold on.We have several slots available tomorrow. How about 9:00 AM, 10:30 AM, or 1:00 PM? Let me know what works best for you!",
+                  "words": [
+                    {
+                      "word": "for ",
+                      "start": 80.492,
+                      "end": 80.654
+                    },
+                    {
+                      "word": "you ",
+                      "start": 80.654,
+                      "end": 80.863
+                    },
+                    {
+                      "word": "Please ",
+                      "start": 80.863,
+                      "end": 81.304
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 81.304,
+                      "end": 81.548
+                    },
+                    {
+                      "word": "on.",
+                      "start": 81.548,
+                      "end": 82.013
+                    },
+                    {
+                      "word": "We ",
+                      "start": 82.058625,
+                      "end": 82.186625
+                    },
+                    {
+                      "word": "have ",
+                      "start": 82.186625,
+                      "end": 82.384625
+                    },
+                    {
+                      "word": "several ",
+                      "start": 82.384625,
+                      "end": 82.709625
+                    },
+                    {
+                      "word": "slots ",
+                      "start": 82.709625,
+                      "end": 83.010625
+                    },
+                    {
+                      "word": "available ",
+                      "start": 83.010625,
+                      "end": 83.463625
+                    },
+                    {
+                      "word": "tomorrow.",
+                      "start": 83.463625,
+                      "end": 84.148625
+                    },
+                    {
+                      "word": " How ",
+                      "start": 84.194875,
+                      "end": 84.322875
+                    },
+                    {
+                      "word": "about ",
+                      "start": 84.322875,
+                      "end": 84.520875
+                    },
+                    {
+                      "word": "9:00 ",
+                      "start": 84.520875,
+                      "end": 84.740875
+                    },
+                    {
+                      "word": "AM, ",
+                      "start": 84.740875,
+                      "end": 85.030875
+                    },
+                    {
+                      "word": "10:30 ",
+                      "start": 85.030875,
+                      "end": 85.274875
+                    },
+                    {
+                      "word": "AM, ",
+                      "start": 85.274875,
+                      "end": 85.576875
+                    },
+                    {
+                      "word": "or ",
+                      "start": 85.576875,
+                      "end": 85.971875
+                    },
+                    {
+                      "word": "1:00 ",
+                      "start": 85.971875,
+                      "end": 86.215875
+                    },
+                    {
+                      "word": "PM?",
+                      "start": 86.215875,
+                      "end": 86.435875
+                    },
+                    {
+                      "word": " Let ",
+                      "start": 87.19045825195313,
+                      "end": 87.37645825195312
+                    },
+                    {
+                      "word": "me ",
+                      "start": 87.37645825195312,
+                      "end": 87.48045825195312
+                    },
+                    {
+                      "word": "know ",
+                      "start": 87.48045825195312,
+                      "end": 87.74745825195312
+                    },
+                    {
+                      "word": "what ",
+                      "start": 87.74745825195312,
+                      "end": 87.96845825195312
+                    },
+                    {
+                      "word": "works ",
+                      "start": 87.96845825195312,
+                      "end": 88.22445825195312
+                    },
+                    {
+                      "word": "best ",
+                      "start": 88.22445825195312,
+                      "end": 88.53745825195313
+                    },
+                    {
+                      "word": "for ",
+                      "start": 88.53745825195313,
+                      "end": 88.72345825195312
+                    },
+                    {
+                      "word": "you!",
+                      "start": 88.72345825195312,
+                      "end": 89.21045825195313
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 10
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Two PM.",
+                  "words": [
+                    {
+                      "word": "Two ",
+                      "start": 90.366,
+                      "end": 90.926005
+                    },
+                    {
+                      "word": "PM.",
+                      "start": 90.926005,
+                      "end": 91.08600000000001
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Got it! We'll book you for 2:00 PM tomorrow. Since this is your first visit, I'll need to collect a few details.What's your first name?",
+                  "words": [
+                    {
+                      "word": "Got ",
+                      "start": 92.692,
+                      "end": 92.936
+                    },
+                    {
+                      "word": "it!",
+                      "start": 92.936,
+                      "end": 93.377
+                    },
+                    {
+                      "word": " We'll ",
+                      "start": 93.42304174804687,
+                      "end": 93.63204174804687
+                    },
+                    {
+                      "word": "book ",
+                      "start": 93.63204174804687,
+                      "end": 93.78304174804687
+                    },
+                    {
+                      "word": "you ",
+                      "start": 93.78304174804687,
+                      "end": 93.89904174804687
+                    },
+                    {
+                      "word": "for ",
+                      "start": 93.89904174804687,
+                      "end": 94.01604174804687
+                    },
+                    {
+                      "word": "2:00 ",
+                      "start": 94.01604174804687,
+                      "end": 94.45704174804688
+                    },
+                    {
+                      "word": "PM ",
+                      "start": 94.45704174804688,
+                      "end": 94.87504174804687
+                    },
+                    {
+                      "word": "tomorrow.",
+                      "start": 94.87504174804687,
+                      "end": 95.65304174804687
+                    },
+                    {
+                      "word": " Since ",
+                      "start": 95.698625,
+                      "end": 95.977625
+                    },
+                    {
+                      "word": "this ",
+                      "start": 95.977625,
+                      "end": 96.163625
+                    },
+                    {
+                      "word": "is ",
+                      "start": 96.163625,
+                      "end": 96.256625
+                    },
+                    {
+                      "word": "your ",
+                      "start": 96.256625,
+                      "end": 96.407625
+                    },
+                    {
+                      "word": "first ",
+                      "start": 96.407625,
+                      "end": 96.627625
+                    },
+                    {
+                      "word": "visit, ",
+                      "start": 96.627625,
+                      "end": 96.941625
+                    },
+                    {
+                      "word": "I'll ",
+                      "start": 96.941625,
+                      "end": 97.115625
+                    },
+                    {
+                      "word": "need ",
+                      "start": 97.115625,
+                      "end": 97.266625
+                    },
+                    {
+                      "word": "to ",
+                      "start": 97.266625,
+                      "end": 97.335625
+                    },
+                    {
+                      "word": "collect ",
+                      "start": 97.335625,
+                      "end": 97.614625
+                    },
+                    {
+                      "word": "a ",
+                      "start": 97.614625,
+                      "end": 97.684625
+                    },
+                    {
+                      "word": "few ",
+                      "start": 97.684625,
+                      "end": 97.846625
+                    },
+                    {
+                      "word": "details.",
+                      "start": 97.846625,
+                      "end": 98.671625
+                    },
+                    {
+                      "word": "What's ",
+                      "start": 98.70620825195313,
+                      "end": 98.97320825195312
+                    },
+                    {
+                      "word": "your ",
+                      "start": 98.97320825195312,
+                      "end": 99.20520825195312
+                    },
+                    {
+                      "word": "first ",
+                      "start": 99.20520825195312,
+                      "end": 99.44920825195312
+                    },
+                    {
+                      "word": "name?",
+                      "start": 99.44920825195312,
+                      "end": 99.97120825195313
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 11
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "It's John Doe.",
+                  "words": [
+                    {
+                      "word": "It's ",
+                      "start": 103.516,
+                      "end": 104.396
+                    },
+                    {
+                      "word": "John ",
+                      "start": 104.55600000000001,
+                      "end": 104.876
+                    },
+                    {
+                      "word": "Doe.",
+                      "start": 104.876,
+                      "end": 105.19600000000001
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thanks, John! Can you spell your last name for me, just to make sure I have it right?",
+                  "words": [
+                    {
+                      "word": "Thanks, ",
+                      "start": 107.16,
+                      "end": 107.462
+                    },
+                    {
+                      "word": "John!",
+                      "start": 107.462,
+                      "end": 107.996
+                    },
+                    {
+                      "word": " Can ",
+                      "start": 108.042375,
+                      "end": 108.217375
+                    },
+                    {
+                      "word": "you ",
+                      "start": 108.217375,
+                      "end": 108.333375
+                    },
+                    {
+                      "word": "spell ",
+                      "start": 108.333375,
+                      "end": 108.565375
+                    },
+                    {
+                      "word": "your ",
+                      "start": 108.565375,
+                      "end": 108.704375
+                    },
+                    {
+                      "word": "last ",
+                      "start": 108.704375,
+                      "end": 108.925375
+                    },
+                    {
+                      "word": "name ",
+                      "start": 108.925375,
+                      "end": 109.111375
+                    },
+                    {
+                      "word": "for ",
+                      "start": 109.111375,
+                      "end": 109.250375
+                    },
+                    {
+                      "word": "me, ",
+                      "start": 109.250375,
+                      "end": 109.436375
+                    },
+                    {
+                      "word": "just ",
+                      "start": 109.436375,
+                      "end": 109.621375
+                    },
+                    {
+                      "word": "to ",
+                      "start": 109.621375,
+                      "end": 109.703375
+                    },
+                    {
+                      "word": "make ",
+                      "start": 109.703375,
+                      "end": 109.842375
+                    },
+                    {
+                      "word": "sure ",
+                      "start": 109.842375,
+                      "end": 110.039375
+                    },
+                    {
+                      "word": "I ",
+                      "start": 110.039375,
+                      "end": 110.144375
+                    },
+                    {
+                      "word": "have ",
+                      "start": 110.144375,
+                      "end": 110.318375
+                    },
+                    {
+                      "word": "it ",
+                      "start": 110.318375,
+                      "end": 110.399375
+                    },
+                    {
+                      "word": "right?",
+                      "start": 110.399375,
+                      "end": 111.015375
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 13
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "D o e.",
+                  "words": [
+                    {
+                      "word": "D ",
+                      "start": 112.406,
+                      "end": 112.886004
+                    },
+                    {
+                      "word": "o ",
+                      "start": 112.886004,
+                      "end": 113.126
+                    },
+                    {
+                      "word": "e.",
+                      "start": 113.126,
+                      "end": 113.366
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Perfect, that's D-O-E, right? Now, what's your email address?",
+                  "words": [
+                    {
+                      "word": "Perfect, ",
+                      "start": 115.396,
+                      "end": 115.768
+                    },
+                    {
+                      "word": "that's ",
+                      "start": 115.768,
+                      "end": 115.988
+                    },
+                    {
+                      "word": "D-O-E, ",
+                      "start": 115.988,
+                      "end": 116.278
+                    },
+                    {
+                      "word": "right?",
+                      "start": 116.278,
+                      "end": 116.731
+                    },
+                    {
+                      "word": " Now, ",
+                      "start": 116.75420825195313,
+                      "end": 117.26520825195313
+                    },
+                    {
+                      "word": "what's ",
+                      "start": 117.26520825195313,
+                      "end": 117.54420825195312
+                    },
+                    {
+                      "word": "your ",
+                      "start": 117.54420825195312,
+                      "end": 117.70620825195313
+                    },
+                    {
+                      "word": "email ",
+                      "start": 117.70620825195313,
+                      "end": 117.98520825195313
+                    },
+                    {
+                      "word": "address?",
+                      "start": 117.98520825195313,
+                      "end": 118.63520825195313
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 14
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "It's first name, last name at gmail dot com.",
+                  "words": [
+                    {
+                      "word": "It's ",
+                      "start": 119.775996,
+                      "end": 120.176
+                    },
+                    {
+                      "word": "first ",
+                      "start": 120.176,
+                      "end": 120.41599500000001
+                    },
+                    {
+                      "word": "name, ",
+                      "start": 120.41599500000001,
+                      "end": 120.656
+                    },
+                    {
+                      "word": "last ",
+                      "start": 120.656,
+                      "end": 120.816
+                    },
+                    {
+                      "word": "name ",
+                      "start": 120.816,
+                      "end": 120.97600000000001
+                    },
+                    {
+                      "word": "at ",
+                      "start": 120.97600000000001,
+                      "end": 121.13600000000001
+                    },
+                    {
+                      "word": "gmail ",
+                      "start": 121.13600000000001,
+                      "end": 121.45599600000001
+                    },
+                    {
+                      "word": "dot ",
+                      "start": 121.45599600000001,
+                      "end": 121.775996
+                    },
+                    {
+                      "word": "com.",
+                      "start": 121.775996,
+                      "end": 121.936
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Got it! So your email is johndoe@gmail.com, is that correct?",
+                  "words": [
+                    {
+                      "word": "Got ",
+                      "start": 123.529,
+                      "end": 123.773
+                    },
+                    {
+                      "word": "it!",
+                      "start": 123.773,
+                      "end": 124.18
+                    },
+                    {
+                      "word": " So ",
+                      "start": 124.225625,
+                      "end": 124.400625
+                    },
+                    {
+                      "word": "your ",
+                      "start": 124.400625,
+                      "end": 124.562625
+                    },
+                    {
+                      "word": "email ",
+                      "start": 124.562625,
+                      "end": 124.841625
+                    },
+                    {
+                      "word": "is ",
+                      "start": 124.841625,
+                      "end": 124.992625
+                    },
+                    {
+                      "word": "johndoe@gmail.com, ",
+                      "start": 124.992625,
+                      "end": 125.468625
+                    },
+                    {
+                      "word": "is ",
+                      "start": 125.468625,
+                      "end": 125.723625
+                    },
+                    {
+                      "word": "that ",
+                      "start": 125.723625,
+                      "end": 126.199625
+                    },
+                    {
+                      "word": "correct?",
+                      "start": 126.199625,
+                      "end": 126.489625
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 15
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 128.356,
+                      "end": 128.676
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Great! Can I use the number you're calling from, +12498005904, for your profile?",
+                  "words": [
+                    {
+                      "word": "Great!",
+                      "start": 130.214,
+                      "end": 130.806
+                    },
+                    {
+                      "word": " Can ",
+                      "start": 130.84116674804687,
+                      "end": 131.03816674804688
+                    },
+                    {
+                      "word": "I ",
+                      "start": 131.03816674804688,
+                      "end": 131.11916674804687
+                    },
+                    {
+                      "word": "use ",
+                      "start": 131.11916674804687,
+                      "end": 131.29416674804688
+                    },
+                    {
+                      "word": "the ",
+                      "start": 131.29416674804688,
+                      "end": 131.39816674804686
+                    },
+                    {
+                      "word": "number ",
+                      "start": 131.39816674804686,
+                      "end": 131.65416674804686
+                    },
+                    {
+                      "word": "you're ",
+                      "start": 131.65416674804686,
+                      "end": 131.83916674804686
+                    },
+                    {
+                      "word": "calling ",
+                      "start": 131.83916674804686,
+                      "end": 132.1181667480469
+                    },
+                    {
+                      "word": "from, ",
+                      "start": 132.1181667480469,
+                      "end": 132.39716674804689
+                    },
+                    {
+                      "word": "+12498005904, ",
+                      "start": 132.39716674804689,
+                      "end": 132.79116674804686
+                    },
+                    {
+                      "word": "for ",
+                      "start": 132.79116674804686,
+                      "end": 133.0821667480469
+                    },
+                    {
+                      "word": "your ",
+                      "start": 133.0821667480469,
+                      "end": 133.34916674804688
+                    },
+                    {
+                      "word": "profile?",
+                      "start": 133.34916674804688,
+                      "end": 133.63916674804688
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 16
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 137.36599999999999,
+                      "end": 137.766
+                    },
+                    {
+                      "word": "Yeah.",
+                      "start": 137.766,
+                      "end": 137.926
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me create your ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 140.276,
+                      "end": 140.427
+                    },
+                    {
+                      "word": "me ",
+                      "start": 140.427,
+                      "end": 140.52
+                    },
+                    {
+                      "word": "create ",
+                      "start": 140.52,
+                      "end": 140.764
+                    },
+                    {
+                      "word": "your ",
+                      "start": 140.764,
+                      "end": 140.927
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 18
+                  }
+                },
+                {
+                  "role": "agent",
+                  "content": "profile first. please hold on.Awesome! Your profile is all set. Just to confirm — you're booking a Clinical Facial on Wednesday, September 24th at 2:00 PM, at our Oakville location, with Olivia Chen, under the name John Doe, email johndoe@gmail.com. Total is $169.00, and it'll take about 60 minutes. Sound good?",
+                  "words": [
+                    {
+                      "word": "profile ",
+                      "start": 140.927,
+                      "end": 141.31
+                    },
+                    {
+                      "word": "first. ",
+                      "start": 141.31,
+                      "end": 141.902
+                    },
+                    {
+                      "word": "please ",
+                      "start": 141.92483325195312,
+                      "end": 142.2038332519531
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 142.2038332519531,
+                      "end": 142.4238332519531
+                    },
+                    {
+                      "word": "on.",
+                      "start": 142.4238332519531,
+                      "end": 142.73783325195313
+                    },
+                    {
+                      "word": "Awesome!",
+                      "start": 142.78375,
+                      "end": 143.52675
+                    },
+                    {
+                      "word": " Your ",
+                      "start": 143.57325,
+                      "end": 143.73625
+                    },
+                    {
+                      "word": "profile ",
+                      "start": 143.73625,
+                      "end": 144.09625
+                    },
+                    {
+                      "word": "is ",
+                      "start": 144.09625,
+                      "end": 144.18925
+                    },
+                    {
+                      "word": "all ",
+                      "start": 144.18925,
+                      "end": 144.32825
+                    },
+                    {
+                      "word": "set.",
+                      "start": 144.32825,
+                      "end": 144.87425
+                    },
+                    {
+                      "word": " Just ",
+                      "start": 145.239,
+                      "end": 145.459
+                    },
+                    {
+                      "word": "to ",
+                      "start": 145.459,
+                      "end": 145.552
+                    },
+                    {
+                      "word": "confirm ",
+                      "start": 145.552,
+                      "end": 145.877
+                    },
+                    {
+                      "word": "— ",
+                      "start": 145.877,
+                      "end": 146.864
+                    },
+                    {
+                      "word": "you're ",
+                      "start": 146.864,
+                      "end": 147.189
+                    },
+                    {
+                      "word": "booking ",
+                      "start": 147.189,
+                      "end": 147.259
+                    },
+                    {
+                      "word": "a ",
+                      "start": 147.259,
+                      "end": 147.642
+                    },
+                    {
+                      "word": "Clinical ",
+                      "start": 147.642,
+                      "end": 148.037
+                    },
+                    {
+                      "word": "Facial ",
+                      "start": 148.037,
+                      "end": 148.199
+                    },
+                    {
+                      "word": "on ",
+                      "start": 148.199,
+                      "end": 149.128
+                    },
+                    {
+                      "word": "Wednesday, ",
+                      "start": 149.128,
+                      "end": 149.732
+                    },
+                    {
+                      "word": "September ",
+                      "start": 149.732,
+                      "end": 150.138
+                    },
+                    {
+                      "word": "24th ",
+                      "start": 150.138,
+                      "end": 150.545
+                    },
+                    {
+                      "word": "at ",
+                      "start": 150.545,
+                      "end": 150.73
+                    },
+                    {
+                      "word": "2:00 ",
+                      "start": 150.73,
+                      "end": 150.974
+                    },
+                    {
+                      "word": "PM, ",
+                      "start": 150.974,
+                      "end": 151.334
+                    },
+                    {
+                      "word": "at ",
+                      "start": 151.334,
+                      "end": 151.52
+                    },
+                    {
+                      "word": "our ",
+                      "start": 151.52,
+                      "end": 151.659
+                    },
+                    {
+                      "word": "Oakville ",
+                      "start": 151.659,
+                      "end": 152.031
+                    },
+                    {
+                      "word": "location, ",
+                      "start": 152.031,
+                      "end": 152.542
+                    },
+                    {
+                      "word": "with ",
+                      "start": 152.542,
+                      "end": 152.75
+                    },
+                    {
+                      "word": "Olivia ",
+                      "start": 152.75,
+                      "end": 153.145
+                    },
+                    {
+                      "word": "Chen, ",
+                      "start": 153.145,
+                      "end": 153.517
+                    },
+                    {
+                      "word": "under ",
+                      "start": 153.517,
+                      "end": 153.795
+                    },
+                    {
+                      "word": "the ",
+                      "start": 153.795,
+                      "end": 153.9
+                    },
+                    {
+                      "word": "name ",
+                      "start": 153.9,
+                      "end": 154.12
+                    },
+                    {
+                      "word": "John ",
+                      "start": 154.12,
+                      "end": 154.376
+                    },
+                    {
+                      "word": "Doe, ",
+                      "start": 154.376,
+                      "end": 155.107
+                    },
+                    {
+                      "word": "email ",
+                      "start": 155.107,
+                      "end": 155.49
+                    },
+                    {
+                      "word": "johndoe@gmail.com. ",
+                      "start": 155.49,
+                      "end": 156.059
+                    },
+                    {
+                      "word": "Total ",
+                      "start": 158.32304174804688,
+                      "end": 158.7300417480469
+                    },
+                    {
+                      "word": "is ",
+                      "start": 158.7300417480469,
+                      "end": 158.84604174804687
+                    },
+                    {
+                      "word": "$169.00, ",
+                      "start": 158.84604174804687,
+                      "end": 158.97304174804688
+                    },
+                    {
+                      "word": "and ",
+                      "start": 158.97304174804688,
+                      "end": 159.19404174804689
+                    },
+                    {
+                      "word": "it'll ",
+                      "start": 159.19404174804689,
+                      "end": 159.29804174804687
+                    },
+                    {
+                      "word": "take ",
+                      "start": 159.29804174804687,
+                      "end": 159.60004174804686
+                    },
+                    {
+                      "word": "about ",
+                      "start": 159.60004174804686,
+                      "end": 159.80904174804687
+                    },
+                    {
+                      "word": "60 ",
+                      "start": 159.80904174804687,
+                      "end": 160.32004174804686
+                    },
+                    {
+                      "word": "minutes.",
+                      "start": 160.32004174804686,
+                      "end": 160.54104174804687
+                    },
+                    {
+                      "word": " Sound ",
+                      "start": 161.99179174804686,
+                      "end": 162.21279174804687
+                    },
+                    {
+                      "word": "good?",
+                      "start": 162.21279174804687,
+                      "end": 162.71179174804686
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 18
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah perfect",
+                  "words": [
+                    {
+                      "word": "Yeah ",
+                      "start": 163.71599999999998,
+                      "end": 164.03599
+                    },
+                    {
+                      "word": "perfect",
+                      "start": 164.03599,
+                      "end": 164.43599999999998
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me book ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 166.648,
+                      "end": 166.787
+                    },
+                    {
+                      "word": "me ",
+                      "start": 166.787,
+                      "end": 166.869
+                    },
+                    {
+                      "word": "book ",
+                      "start": 166.869,
+                      "end": 167.043
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 19
+                  }
+                }
+              ],
+              "transcript_with_tool_calls": [
+                {
+                  "role": "agent",
+                  "content": "Hi, Lumina MedSpa here! How can I help you today?",
+                  "words": [
+                    {
+                      "word": "Hi, ",
+                      "start": 1.289,
+                      "end": 1.579
+                    },
+                    {
+                      "word": "Lumina ",
+                      "start": 1.579,
+                      "end": 1.869
+                    },
+                    {
+                      "word": "MedSpa ",
+                      "start": 1.869,
+                      "end": 2.171
+                    },
+                    {
+                      "word": "here!",
+                      "start": 2.171,
+                      "end": 2.659
+                    },
+                    {
+                      "word": " How ",
+                      "start": 2.704625,
+                      "end": 2.855625
+                    },
+                    {
+                      "word": "can ",
+                      "start": 2.855625,
+                      "end": 2.995625
+                    },
+                    {
+                      "word": "I ",
+                      "start": 2.995625,
+                      "end": 3.064625
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.064625,
+                      "end": 3.262625
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.262625,
+                      "end": 3.389625
+                    },
+                    {
+                      "word": "today?",
+                      "start": 3.389625,
+                      "end": 3.958625
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I want to book an appointment.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 13.966,
+                      "end": 14.286
+                    },
+                    {
+                      "word": "want ",
+                      "start": 14.286,
+                      "end": 14.526
+                    },
+                    {
+                      "word": "to ",
+                      "start": 14.526,
+                      "end": 14.685998999999999
+                    },
+                    {
+                      "word": "book ",
+                      "start": 14.685998999999999,
+                      "end": 14.765998999999999
+                    },
+                    {
+                      "word": "an ",
+                      "start": 14.765998999999999,
+                      "end": 14.926
+                    },
+                    {
+                      "word": "appointment.",
+                      "start": 14.926,
+                      "end": 15.245999999999999
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Sure! What service would you like to book today?",
+                  "words": [
+                    {
+                      "word": "Sure!",
+                      "start": 16.57,
+                      "end": 16.988
+                    },
+                    {
+                      "word": " What ",
+                      "start": 17.000416748046874,
+                      "end": 17.255416748046876
+                    },
+                    {
+                      "word": "service ",
+                      "start": 17.255416748046876,
+                      "end": 17.580416748046876
+                    },
+                    {
+                      "word": "would ",
+                      "start": 17.580416748046876,
+                      "end": 17.743416748046876
+                    },
+                    {
+                      "word": "you ",
+                      "start": 17.743416748046876,
+                      "end": 17.859416748046876
+                    },
+                    {
+                      "word": "like ",
+                      "start": 17.859416748046876,
+                      "end": 18.010416748046875
+                    },
+                    {
+                      "word": "to ",
+                      "start": 18.010416748046875,
+                      "end": 18.091416748046875
+                    },
+                    {
+                      "word": "book ",
+                      "start": 18.091416748046875,
+                      "end": 18.265416748046874
+                    },
+                    {
+                      "word": "today?",
+                      "start": 18.265416748046874,
+                      "end": 18.846416748046874
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "What services are available?",
+                  "words": [
+                    {
+                      "word": "What ",
+                      "start": 23.085999,
+                      "end": 23.485999
+                    },
+                    {
+                      "word": "services ",
+                      "start": 23.485999,
+                      "end": 23.805998
+                    },
+                    {
+                      "word": "are ",
+                      "start": 23.805998,
+                      "end": 24.125999999999998
+                    },
+                    {
+                      "word": "available?",
+                      "start": 24.125999999999998,
+                      "end": 24.366
+                    }
+                  ]
+                },
+                {
+                  "role": "user",
+                  "content": "need facial treatment for my face.",
+                  "words": [
+                    {
+                      "word": "need ",
+                      "start": 25.165999,
+                      "end": 25.645998
+                    },
+                    {
+                      "word": "facial ",
+                      "start": 25.645998,
+                      "end": 26.285999999999998
+                    },
+                    {
+                      "word": "treatment ",
+                      "start": 26.285999999999998,
+                      "end": 26.766
+                    },
+                    {
+                      "word": "for ",
+                      "start": 26.766,
+                      "end": 27.006
+                    },
+                    {
+                      "word": "my ",
+                      "start": 27.006,
+                      "end": 27.165999
+                    },
+                    {
+                      "word": "face.",
+                      "start": 27.165999,
+                      "end": 27.325999
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Got it! For facial treatments, we offer a few options:\n\n1. Clinical Facial (60 min) - Customized cleanse, exfoliation, extractions, massage, targeted mask, and finishing products.",
+                  "words": [
+                    {
+                      "word": "Got ",
+                      "start": 28.839,
+                      "end": 29.082
+                    },
+                    {
+                      "word": "it!",
+                      "start": 29.082,
+                      "end": 29.466
+                    },
+                    {
+                      "word": " For ",
+                      "start": 29.511625,
+                      "end": 29.697625
+                    },
+                    {
+                      "word": "facial ",
+                      "start": 29.697625,
+                      "end": 29.976625
+                    },
+                    {
+                      "word": "treatments, ",
+                      "start": 29.976625,
+                      "end": 30.394625
+                    },
+                    {
+                      "word": "we ",
+                      "start": 30.394625,
+                      "end": 30.580625
+                    },
+                    {
+                      "word": "offer ",
+                      "start": 30.580625,
+                      "end": 30.858625
+                    },
+                    {
+                      "word": "a ",
+                      "start": 30.858625,
+                      "end": 30.928625
+                    },
+                    {
+                      "word": "few ",
+                      "start": 30.928625,
+                      "end": 31.125625
+                    },
+                    {
+                      "word": "options:\n",
+                      "start": 31.125625,
+                      "end": 32.576625
+                    },
+                    {
+                      "word": "\n1. ",
+                      "start": 32.577125,
+                      "end": 32.577125
+                    },
+                    {
+                      "word": "Clinical ",
+                      "start": 32.623125,
+                      "end": 33.041125
+                    },
+                    {
+                      "word": "Facial ",
+                      "start": 33.041125,
+                      "end": 33.459125
+                    },
+                    {
+                      "word": "(60 ",
+                      "start": 33.459125,
+                      "end": 33.842125
+                    },
+                    {
+                      "word": "min) ",
+                      "start": 33.842125,
+                      "end": 34.632125
+                    },
+                    {
+                      "word": "- ",
+                      "start": 34.632125,
+                      "end": 35.224125
+                    },
+                    {
+                      "word": "Customized ",
+                      "start": 35.224125,
+                      "end": 35.654125
+                    },
+                    {
+                      "word": "cleanse, ",
+                      "start": 35.654125,
+                      "end": 36.408125
+                    },
+                    {
+                      "word": "exfoliation, ",
+                      "start": 36.408125,
+                      "end": 37.163125
+                    },
+                    {
+                      "word": "extractions, ",
+                      "start": 37.163125,
+                      "end": 37.755125
+                    },
+                    {
+                      "word": "massage, ",
+                      "start": 37.755125,
+                      "end": 38.173125
+                    },
+                    {
+                      "word": "targeted ",
+                      "start": 38.173125,
+                      "end": 38.533125
+                    },
+                    {
+                      "word": "mask, ",
+                      "start": 38.533125,
+                      "end": 38.800125
+                    },
+                    {
+                      "word": "and ",
+                      "start": 38.800125,
+                      "end": 39.160125
+                    },
+                    {
+                      "word": "finishing ",
+                      "start": 39.160125,
+                      "end": 39.915125
+                    },
+                    {
+                      "word": "products.",
+                      "start": 39.914625,
+                      "end": 39.914625
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. ",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 39.966,
+                      "end": 40.445997999999996
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": " It's $169.00.",
+                  "words": [
+                    {
+                      "word": " It's ",
+                      "start": 39.960625,
+                      "end": 40.355625
+                    },
+                    {
+                      "word": "$169.00.",
+                      "start": 40.355625,
+                      "end": 40.587625
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "I need clinical",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 40.445997999999996,
+                      "end": 41.006
+                    },
+                    {
+                      "word": "need ",
+                      "start": 41.006,
+                      "end": 41.406
+                    },
+                    {
+                      "word": "clinical",
+                      "start": 41.406,
+                      "end": 41.966
+                    }
+                  ]
+                },
+                {
+                  "role": "user",
+                  "content": "I need clinical session.",
+                  "words": [
+                    {
+                      "word": "I ",
+                      "start": 42.566,
+                      "end": 42.806002
+                    },
+                    {
+                      "word": "need ",
+                      "start": 42.806002,
+                      "end": 43.046
+                    },
+                    {
+                      "word": "clinical ",
+                      "start": 43.046,
+                      "end": 43.525999999999996
+                    },
+                    {
+                      "word": "session.",
+                      "start": 43.525999999999996,
+                      "end": 43.926
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Okay, a Clinical Facial! That's $169.00 and takes about 60 minutes. Sound good?",
+                  "words": [
+                    {
+                      "word": "Okay, ",
+                      "start": 45.618,
+                      "end": 45.885
+                    },
+                    {
+                      "word": "a ",
+                      "start": 45.885,
+                      "end": 45.955
+                    },
+                    {
+                      "word": "Clinical ",
+                      "start": 45.955,
+                      "end": 46.28
+                    },
+                    {
+                      "word": "Facial!",
+                      "start": 46.28,
+                      "end": 46.872
+                    },
+                    {
+                      "word": " That's ",
+                      "start": 46.91775,
+                      "end": 47.17375
+                    },
+                    {
+                      "word": "$169.00 ",
+                      "start": 47.17375,
+                      "end": 47.34775
+                    },
+                    {
+                      "word": "and ",
+                      "start": 47.34775,
+                      "end": 47.59175
+                    },
+                    {
+                      "word": "takes ",
+                      "start": 47.59175,
+                      "end": 47.69575
+                    },
+                    {
+                      "word": "about ",
+                      "start": 47.69575,
+                      "end": 48.04475
+                    },
+                    {
+                      "word": "60 ",
+                      "start": 48.04475,
+                      "end": 48.24175
+                    },
+                    {
+                      "word": "minutes.",
+                      "start": 48.24175,
+                      "end": 48.61275
+                    },
+                    {
+                      "word": " Sound ",
+                      "start": 50.284875,
+                      "end": 50.598875
+                    },
+                    {
+                      "word": "good?",
+                      "start": 50.598875,
+                      "end": 51.143875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 6
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 51.736002,
+                      "end": 52.056002
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Great! Would you like to come to our Oakville location at 310 Cornwall Rd?",
+                  "words": [
+                    {
+                      "word": "Great!",
+                      "start": 53.459,
+                      "end": 54.051
+                    },
+                    {
+                      "word": " Would ",
+                      "start": 54.097166748046874,
+                      "end": 54.295166748046874
+                    },
+                    {
+                      "word": "you ",
+                      "start": 54.295166748046874,
+                      "end": 54.411166748046874
+                    },
+                    {
+                      "word": "like ",
+                      "start": 54.411166748046874,
+                      "end": 54.539166748046874
+                    },
+                    {
+                      "word": "to ",
+                      "start": 54.539166748046874,
+                      "end": 54.62016674804688
+                    },
+                    {
+                      "word": "come ",
+                      "start": 54.62016674804688,
+                      "end": 54.79416674804688
+                    },
+                    {
+                      "word": "to ",
+                      "start": 54.79416674804688,
+                      "end": 54.910166748046876
+                    },
+                    {
+                      "word": "our ",
+                      "start": 54.910166748046876,
+                      "end": 55.200166748046875
+                    },
+                    {
+                      "word": "Oakville ",
+                      "start": 55.200166748046875,
+                      "end": 55.59516674804688
+                    },
+                    {
+                      "word": "location ",
+                      "start": 55.59516674804688,
+                      "end": 56.08316674804688
+                    },
+                    {
+                      "word": "at ",
+                      "start": 56.08316674804688,
+                      "end": 56.19916674804688
+                    },
+                    {
+                      "word": "310 ",
+                      "start": 56.19916674804688,
+                      "end": 56.45416674804687
+                    },
+                    {
+                      "word": "Cornwall ",
+                      "start": 56.45416674804687,
+                      "end": 56.75616674804687
+                    },
+                    {
+                      "word": "Rd?",
+                      "start": 56.75616674804687,
+                      "end": 56.86116674804688
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 7
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 60.246,
+                      "end": 60.486002
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Perfect! Which staff member would you like to book with? We have Maya Patel, Alex ",
+                  "words": [
+                    {
+                      "word": "Perfect!",
+                      "start": 62.522,
+                      "end": 63.08
+                    },
+                    {
+                      "word": " Which ",
+                      "start": 63.12570825195313,
+                      "end": 63.36970825195313
+                    },
+                    {
+                      "word": "staff ",
+                      "start": 63.36970825195313,
+                      "end": 63.65970825195313
+                    },
+                    {
+                      "word": "member ",
+                      "start": 63.65970825195313,
+                      "end": 63.88070825195312
+                    },
+                    {
+                      "word": "would ",
+                      "start": 63.88070825195312,
+                      "end": 64.01970825195312
+                    },
+                    {
+                      "word": "you ",
+                      "start": 64.01970825195312,
+                      "end": 64.13670825195312
+                    },
+                    {
+                      "word": "like ",
+                      "start": 64.13670825195312,
+                      "end": 64.27570825195312
+                    },
+                    {
+                      "word": "to ",
+                      "start": 64.27570825195312,
+                      "end": 64.35670825195312
+                    },
+                    {
+                      "word": "book ",
+                      "start": 64.35670825195312,
+                      "end": 64.55370825195313
+                    },
+                    {
+                      "word": "with?",
+                      "start": 64.55370825195313,
+                      "end": 65.12270825195313
+                    },
+                    {
+                      "word": " We ",
+                      "start": 65.15808325195313,
+                      "end": 65.46008325195312
+                    },
+                    {
+                      "word": "have ",
+                      "start": 65.46008325195312,
+                      "end": 65.98208325195313
+                    },
+                    {
+                      "word": "Maya ",
+                      "start": 65.98208325195313,
+                      "end": 66.29608325195312
+                    },
+                    {
+                      "word": "Patel, ",
+                      "start": 66.29608325195312,
+                      "end": 66.88808325195312
+                    },
+                    {
+                      "word": "Alex ",
+                      "start": 66.88808325195312,
+                      "end": 67.72408325195312
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 8
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Olivia Chen.",
+                  "words": [
+                    {
+                      "word": "Olivia ",
+                      "start": 67.55600000000001,
+                      "end": 68.036005
+                    },
+                    {
+                      "word": "Chen.",
+                      "start": 68.036005,
+                      "end": 68.35600500000001
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Alright, Olivia Chen it is! When were you hoping to come in?",
+                  "words": [
+                    {
+                      "word": "Alright, ",
+                      "start": 69.956,
+                      "end": 70.281
+                    },
+                    {
+                      "word": "Olivia ",
+                      "start": 70.281,
+                      "end": 70.56
+                    },
+                    {
+                      "word": "Chen ",
+                      "start": 70.56,
+                      "end": 70.722
+                    },
+                    {
+                      "word": "it ",
+                      "start": 70.722,
+                      "end": 70.838
+                    },
+                    {
+                      "word": "is!",
+                      "start": 70.838,
+                      "end": 71.314
+                    },
+                    {
+                      "word": " When ",
+                      "start": 71.36020825195313,
+                      "end": 71.55820825195312
+                    },
+                    {
+                      "word": "were ",
+                      "start": 71.55820825195312,
+                      "end": 71.68620825195312
+                    },
+                    {
+                      "word": "you ",
+                      "start": 71.68620825195312,
+                      "end": 71.81320825195313
+                    },
+                    {
+                      "word": "hoping ",
+                      "start": 71.81320825195313,
+                      "end": 72.05720825195313
+                    },
+                    {
+                      "word": "to ",
+                      "start": 72.05720825195313,
+                      "end": 72.13820825195313
+                    },
+                    {
+                      "word": "come ",
+                      "start": 72.13820825195313,
+                      "end": 72.28920825195313
+                    },
+                    {
+                      "word": "in?",
+                      "start": 72.28920825195313,
+                      "end": 72.75420825195313
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 9
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Tomorrow.",
+                  "words": [
+                    {
+                      "word": "Tomorrow.",
+                      "start": 75.485995,
+                      "end": 75.72599000000001
+                    }
+                  ]
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "c27a739560789c8f",
+                  "name": "Availability_Google",
+                  "arguments": "{\"starttime\":\"2025-09-24T09:00:00Z\",\"endtime\":\"2025-09-24T17:00:00Z\",\"clientId\":\"LuminaMedSpaOakville\",\"phone\":\"+12498005904\",\"execution_message\":\"Let me check Availability for you Please hold on.\"}"
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me check Availability ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 79.493,
+                      "end": 79.644
+                    },
+                    {
+                      "word": "me ",
+                      "start": 79.644,
+                      "end": 79.725
+                    },
+                    {
+                      "word": "check ",
+                      "start": 79.725,
+                      "end": 79.923
+                    },
+                    {
+                      "word": "Availability ",
+                      "start": 79.923,
+                      "end": 80.492
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 10
+                  }
+                },
+                {
+                  "role": "tool_call_result",
+                  "tool_call_id": "c27a739560789c8f",
+                  "content": "[{\"slot\":\"2025-09-24T08:00:00-04:00\"},{\"slot\":\"2025-09-24T08:30:00-04:00\"},{\"slot\":\"2025-09-24T09:00:00-04:00\"},{\"slot\":\"2025-09-24T09:30:00-04:00\"},{\"slot\":\"2025-09-24T10:00:00-04:00\"},{\"slot\":\"2025-09-24T10:30:00-04:00\"},{\"slot\":\"2025-09-24T11:00:00-04:00\"},{\"slot\":\"2025-09-24T11:30:00-04:00\"},{\"slot\":\"2025-09-24T12:00:00-04:00\"},{\"slot\":\"2025-09-24T12:30:00-04:00\"},{\"slot\":\"2025-09-24T13:00:00-04:00\"},{\"slot\":\"2025-09-24T13:30:00-04:00\"},{\"slot\":\"2025-09-24T14:00:00-04:00\"},{\"slot\":\"2025-09-24T14:30:00-04:00\"},{\"slot\":\"2025-09-24T15:00:00-04:00\"},{\"slot\":\"2025-09-24T15:30:00-04:00\"},{\"slot\":\"2025-09-24T16:00:00-04:00\"},{\"slot\":\"2025-09-24T16:30:00-04:00\"},{\"slot\":\"2025-09-24T17:00:00-04:00\"},{\"slot\":\"2025-09-24T17:30:00-04:00\"}]"
+                },
+                {
+                  "role": "agent",
+                  "content": "for you Please hold on.We have several slots available tomorrow. How about 9:00 AM, 10:30 AM, or 1:00 PM? Let me know what works best for you!",
+                  "words": [
+                    {
+                      "word": "for ",
+                      "start": 80.492,
+                      "end": 80.654
+                    },
+                    {
+                      "word": "you ",
+                      "start": 80.654,
+                      "end": 80.863
+                    },
+                    {
+                      "word": "Please ",
+                      "start": 80.863,
+                      "end": 81.304
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 81.304,
+                      "end": 81.548
+                    },
+                    {
+                      "word": "on.",
+                      "start": 81.548,
+                      "end": 82.013
+                    },
+                    {
+                      "word": "We ",
+                      "start": 82.058625,
+                      "end": 82.186625
+                    },
+                    {
+                      "word": "have ",
+                      "start": 82.186625,
+                      "end": 82.384625
+                    },
+                    {
+                      "word": "several ",
+                      "start": 82.384625,
+                      "end": 82.709625
+                    },
+                    {
+                      "word": "slots ",
+                      "start": 82.709625,
+                      "end": 83.010625
+                    },
+                    {
+                      "word": "available ",
+                      "start": 83.010625,
+                      "end": 83.463625
+                    },
+                    {
+                      "word": "tomorrow.",
+                      "start": 83.463625,
+                      "end": 84.148625
+                    },
+                    {
+                      "word": " How ",
+                      "start": 84.194875,
+                      "end": 84.322875
+                    },
+                    {
+                      "word": "about ",
+                      "start": 84.322875,
+                      "end": 84.520875
+                    },
+                    {
+                      "word": "9:00 ",
+                      "start": 84.520875,
+                      "end": 84.740875
+                    },
+                    {
+                      "word": "AM, ",
+                      "start": 84.740875,
+                      "end": 85.030875
+                    },
+                    {
+                      "word": "10:30 ",
+                      "start": 85.030875,
+                      "end": 85.274875
+                    },
+                    {
+                      "word": "AM, ",
+                      "start": 85.274875,
+                      "end": 85.576875
+                    },
+                    {
+                      "word": "or ",
+                      "start": 85.576875,
+                      "end": 85.971875
+                    },
+                    {
+                      "word": "1:00 ",
+                      "start": 85.971875,
+                      "end": 86.215875
+                    },
+                    {
+                      "word": "PM?",
+                      "start": 86.215875,
+                      "end": 86.435875
+                    },
+                    {
+                      "word": " Let ",
+                      "start": 87.19045825195313,
+                      "end": 87.37645825195312
+                    },
+                    {
+                      "word": "me ",
+                      "start": 87.37645825195312,
+                      "end": 87.48045825195312
+                    },
+                    {
+                      "word": "know ",
+                      "start": 87.48045825195312,
+                      "end": 87.74745825195312
+                    },
+                    {
+                      "word": "what ",
+                      "start": 87.74745825195312,
+                      "end": 87.96845825195312
+                    },
+                    {
+                      "word": "works ",
+                      "start": 87.96845825195312,
+                      "end": 88.22445825195312
+                    },
+                    {
+                      "word": "best ",
+                      "start": 88.22445825195312,
+                      "end": 88.53745825195313
+                    },
+                    {
+                      "word": "for ",
+                      "start": 88.53745825195313,
+                      "end": 88.72345825195312
+                    },
+                    {
+                      "word": "you!",
+                      "start": 88.72345825195312,
+                      "end": 89.21045825195313
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 10
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Two PM.",
+                  "words": [
+                    {
+                      "word": "Two ",
+                      "start": 90.366,
+                      "end": 90.926005
+                    },
+                    {
+                      "word": "PM.",
+                      "start": 90.926005,
+                      "end": 91.08600000000001
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Got it! We'll book you for 2:00 PM tomorrow. Since this is your first visit, I'll need to collect a few details.What's your first name?",
+                  "words": [
+                    {
+                      "word": "Got ",
+                      "start": 92.692,
+                      "end": 92.936
+                    },
+                    {
+                      "word": "it!",
+                      "start": 92.936,
+                      "end": 93.377
+                    },
+                    {
+                      "word": " We'll ",
+                      "start": 93.42304174804687,
+                      "end": 93.63204174804687
+                    },
+                    {
+                      "word": "book ",
+                      "start": 93.63204174804687,
+                      "end": 93.78304174804687
+                    },
+                    {
+                      "word": "you ",
+                      "start": 93.78304174804687,
+                      "end": 93.89904174804687
+                    },
+                    {
+                      "word": "for ",
+                      "start": 93.89904174804687,
+                      "end": 94.01604174804687
+                    },
+                    {
+                      "word": "2:00 ",
+                      "start": 94.01604174804687,
+                      "end": 94.45704174804688
+                    },
+                    {
+                      "word": "PM ",
+                      "start": 94.45704174804688,
+                      "end": 94.87504174804687
+                    },
+                    {
+                      "word": "tomorrow.",
+                      "start": 94.87504174804687,
+                      "end": 95.65304174804687
+                    },
+                    {
+                      "word": " Since ",
+                      "start": 95.698625,
+                      "end": 95.977625
+                    },
+                    {
+                      "word": "this ",
+                      "start": 95.977625,
+                      "end": 96.163625
+                    },
+                    {
+                      "word": "is ",
+                      "start": 96.163625,
+                      "end": 96.256625
+                    },
+                    {
+                      "word": "your ",
+                      "start": 96.256625,
+                      "end": 96.407625
+                    },
+                    {
+                      "word": "first ",
+                      "start": 96.407625,
+                      "end": 96.627625
+                    },
+                    {
+                      "word": "visit, ",
+                      "start": 96.627625,
+                      "end": 96.941625
+                    },
+                    {
+                      "word": "I'll ",
+                      "start": 96.941625,
+                      "end": 97.115625
+                    },
+                    {
+                      "word": "need ",
+                      "start": 97.115625,
+                      "end": 97.266625
+                    },
+                    {
+                      "word": "to ",
+                      "start": 97.266625,
+                      "end": 97.335625
+                    },
+                    {
+                      "word": "collect ",
+                      "start": 97.335625,
+                      "end": 97.614625
+                    },
+                    {
+                      "word": "a ",
+                      "start": 97.614625,
+                      "end": 97.684625
+                    },
+                    {
+                      "word": "few ",
+                      "start": 97.684625,
+                      "end": 97.846625
+                    },
+                    {
+                      "word": "details.",
+                      "start": 97.846625,
+                      "end": 98.671625
+                    },
+                    {
+                      "word": "What's ",
+                      "start": 98.70620825195313,
+                      "end": 98.97320825195312
+                    },
+                    {
+                      "word": "your ",
+                      "start": 98.97320825195312,
+                      "end": 99.20520825195312
+                    },
+                    {
+                      "word": "first ",
+                      "start": 99.20520825195312,
+                      "end": 99.44920825195312
+                    },
+                    {
+                      "word": "name?",
+                      "start": 99.44920825195312,
+                      "end": 99.97120825195313
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 11
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "It's John Doe.",
+                  "words": [
+                    {
+                      "word": "It's ",
+                      "start": 103.516,
+                      "end": 104.396
+                    },
+                    {
+                      "word": "John ",
+                      "start": 104.55600000000001,
+                      "end": 104.876
+                    },
+                    {
+                      "word": "Doe.",
+                      "start": 104.876,
+                      "end": 105.19600000000001
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thanks, John! Can you spell your last name for me, just to make sure I have it right?",
+                  "words": [
+                    {
+                      "word": "Thanks, ",
+                      "start": 107.16,
+                      "end": 107.462
+                    },
+                    {
+                      "word": "John!",
+                      "start": 107.462,
+                      "end": 107.996
+                    },
+                    {
+                      "word": " Can ",
+                      "start": 108.042375,
+                      "end": 108.217375
+                    },
+                    {
+                      "word": "you ",
+                      "start": 108.217375,
+                      "end": 108.333375
+                    },
+                    {
+                      "word": "spell ",
+                      "start": 108.333375,
+                      "end": 108.565375
+                    },
+                    {
+                      "word": "your ",
+                      "start": 108.565375,
+                      "end": 108.704375
+                    },
+                    {
+                      "word": "last ",
+                      "start": 108.704375,
+                      "end": 108.925375
+                    },
+                    {
+                      "word": "name ",
+                      "start": 108.925375,
+                      "end": 109.111375
+                    },
+                    {
+                      "word": "for ",
+                      "start": 109.111375,
+                      "end": 109.250375
+                    },
+                    {
+                      "word": "me, ",
+                      "start": 109.250375,
+                      "end": 109.436375
+                    },
+                    {
+                      "word": "just ",
+                      "start": 109.436375,
+                      "end": 109.621375
+                    },
+                    {
+                      "word": "to ",
+                      "start": 109.621375,
+                      "end": 109.703375
+                    },
+                    {
+                      "word": "make ",
+                      "start": 109.703375,
+                      "end": 109.842375
+                    },
+                    {
+                      "word": "sure ",
+                      "start": 109.842375,
+                      "end": 110.039375
+                    },
+                    {
+                      "word": "I ",
+                      "start": 110.039375,
+                      "end": 110.144375
+                    },
+                    {
+                      "word": "have ",
+                      "start": 110.144375,
+                      "end": 110.318375
+                    },
+                    {
+                      "word": "it ",
+                      "start": 110.318375,
+                      "end": 110.399375
+                    },
+                    {
+                      "word": "right?",
+                      "start": 110.399375,
+                      "end": 111.015375
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 13
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "D o e.",
+                  "words": [
+                    {
+                      "word": "D ",
+                      "start": 112.406,
+                      "end": 112.886004
+                    },
+                    {
+                      "word": "o ",
+                      "start": 112.886004,
+                      "end": 113.126
+                    },
+                    {
+                      "word": "e.",
+                      "start": 113.126,
+                      "end": 113.366
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Perfect, that's D-O-E, right? Now, what's your email address?",
+                  "words": [
+                    {
+                      "word": "Perfect, ",
+                      "start": 115.396,
+                      "end": 115.768
+                    },
+                    {
+                      "word": "that's ",
+                      "start": 115.768,
+                      "end": 115.988
+                    },
+                    {
+                      "word": "D-O-E, ",
+                      "start": 115.988,
+                      "end": 116.278
+                    },
+                    {
+                      "word": "right?",
+                      "start": 116.278,
+                      "end": 116.731
+                    },
+                    {
+                      "word": " Now, ",
+                      "start": 116.75420825195313,
+                      "end": 117.26520825195313
+                    },
+                    {
+                      "word": "what's ",
+                      "start": 117.26520825195313,
+                      "end": 117.54420825195312
+                    },
+                    {
+                      "word": "your ",
+                      "start": 117.54420825195312,
+                      "end": 117.70620825195313
+                    },
+                    {
+                      "word": "email ",
+                      "start": 117.70620825195313,
+                      "end": 117.98520825195313
+                    },
+                    {
+                      "word": "address?",
+                      "start": 117.98520825195313,
+                      "end": 118.63520825195313
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 14
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "It's first name, last name at gmail dot com.",
+                  "words": [
+                    {
+                      "word": "It's ",
+                      "start": 119.775996,
+                      "end": 120.176
+                    },
+                    {
+                      "word": "first ",
+                      "start": 120.176,
+                      "end": 120.41599500000001
+                    },
+                    {
+                      "word": "name, ",
+                      "start": 120.41599500000001,
+                      "end": 120.656
+                    },
+                    {
+                      "word": "last ",
+                      "start": 120.656,
+                      "end": 120.816
+                    },
+                    {
+                      "word": "name ",
+                      "start": 120.816,
+                      "end": 120.97600000000001
+                    },
+                    {
+                      "word": "at ",
+                      "start": 120.97600000000001,
+                      "end": 121.13600000000001
+                    },
+                    {
+                      "word": "gmail ",
+                      "start": 121.13600000000001,
+                      "end": 121.45599600000001
+                    },
+                    {
+                      "word": "dot ",
+                      "start": 121.45599600000001,
+                      "end": 121.775996
+                    },
+                    {
+                      "word": "com.",
+                      "start": 121.775996,
+                      "end": 121.936
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Got it! So your email is johndoe@gmail.com, is that correct?",
+                  "words": [
+                    {
+                      "word": "Got ",
+                      "start": 123.529,
+                      "end": 123.773
+                    },
+                    {
+                      "word": "it!",
+                      "start": 123.773,
+                      "end": 124.18
+                    },
+                    {
+                      "word": " So ",
+                      "start": 124.225625,
+                      "end": 124.400625
+                    },
+                    {
+                      "word": "your ",
+                      "start": 124.400625,
+                      "end": 124.562625
+                    },
+                    {
+                      "word": "email ",
+                      "start": 124.562625,
+                      "end": 124.841625
+                    },
+                    {
+                      "word": "is ",
+                      "start": 124.841625,
+                      "end": 124.992625
+                    },
+                    {
+                      "word": "johndoe@gmail.com, ",
+                      "start": 124.992625,
+                      "end": 125.468625
+                    },
+                    {
+                      "word": "is ",
+                      "start": 125.468625,
+                      "end": 125.723625
+                    },
+                    {
+                      "word": "that ",
+                      "start": 125.723625,
+                      "end": 126.199625
+                    },
+                    {
+                      "word": "correct?",
+                      "start": 126.199625,
+                      "end": 126.489625
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 15
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah.",
+                      "start": 128.356,
+                      "end": 128.676
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Great! Can I use the number you're calling from, +12498005904, for your profile?",
+                  "words": [
+                    {
+                      "word": "Great!",
+                      "start": 130.214,
+                      "end": 130.806
+                    },
+                    {
+                      "word": " Can ",
+                      "start": 130.84116674804687,
+                      "end": 131.03816674804688
+                    },
+                    {
+                      "word": "I ",
+                      "start": 131.03816674804688,
+                      "end": 131.11916674804687
+                    },
+                    {
+                      "word": "use ",
+                      "start": 131.11916674804687,
+                      "end": 131.29416674804688
+                    },
+                    {
+                      "word": "the ",
+                      "start": 131.29416674804688,
+                      "end": 131.39816674804686
+                    },
+                    {
+                      "word": "number ",
+                      "start": 131.39816674804686,
+                      "end": 131.65416674804686
+                    },
+                    {
+                      "word": "you're ",
+                      "start": 131.65416674804686,
+                      "end": 131.83916674804686
+                    },
+                    {
+                      "word": "calling ",
+                      "start": 131.83916674804686,
+                      "end": 132.1181667480469
+                    },
+                    {
+                      "word": "from, ",
+                      "start": 132.1181667480469,
+                      "end": 132.39716674804689
+                    },
+                    {
+                      "word": "+12498005904, ",
+                      "start": 132.39716674804689,
+                      "end": 132.79116674804686
+                    },
+                    {
+                      "word": "for ",
+                      "start": 132.79116674804686,
+                      "end": 133.0821667480469
+                    },
+                    {
+                      "word": "your ",
+                      "start": 133.0821667480469,
+                      "end": 133.34916674804688
+                    },
+                    {
+                      "word": "profile?",
+                      "start": 133.34916674804688,
+                      "end": 133.63916674804688
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 16
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. Yeah.",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 137.36599999999999,
+                      "end": 137.766
+                    },
+                    {
+                      "word": "Yeah.",
+                      "start": 137.766,
+                      "end": 137.926
+                    }
+                  ]
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "e874cdddaeb654eb",
+                  "name": "create_user",
+                  "arguments": "{\"last_name\":\"Doe\",\"clientId\":\"LuminaMedSpaOakville\",\"first_name\":\"John\",\"phone\":\"+12498005904\",\"execution_message\":\"Let me create your profile first. please hold on.\"}"
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me create your ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 140.276,
+                      "end": 140.427
+                    },
+                    {
+                      "word": "me ",
+                      "start": 140.427,
+                      "end": 140.52
+                    },
+                    {
+                      "word": "create ",
+                      "start": 140.52,
+                      "end": 140.764
+                    },
+                    {
+                      "word": "your ",
+                      "start": 140.764,
+                      "end": 140.927
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 18
+                  }
+                },
+                {
+                  "role": "tool_call_result",
+                  "tool_call_id": "e874cdddaeb654eb",
+                  "content": "[{\"message\":\"Customer created Successfully\"}]"
+                },
+                {
+                  "role": "agent",
+                  "content": "profile first. please hold on.Awesome! Your profile is all set. Just to confirm — you're booking a Clinical Facial on Wednesday, September 24th at 2:00 PM, at our Oakville location, with Olivia Chen, under the name John Doe, email johndoe@gmail.com. Total is $169.00, and it'll take about 60 minutes. Sound good?",
+                  "words": [
+                    {
+                      "word": "profile ",
+                      "start": 140.927,
+                      "end": 141.31
+                    },
+                    {
+                      "word": "first. ",
+                      "start": 141.31,
+                      "end": 141.902
+                    },
+                    {
+                      "word": "please ",
+                      "start": 141.92483325195312,
+                      "end": 142.2038332519531
+                    },
+                    {
+                      "word": "hold ",
+                      "start": 142.2038332519531,
+                      "end": 142.4238332519531
+                    },
+                    {
+                      "word": "on.",
+                      "start": 142.4238332519531,
+                      "end": 142.73783325195313
+                    },
+                    {
+                      "word": "Awesome!",
+                      "start": 142.78375,
+                      "end": 143.52675
+                    },
+                    {
+                      "word": " Your ",
+                      "start": 143.57325,
+                      "end": 143.73625
+                    },
+                    {
+                      "word": "profile ",
+                      "start": 143.73625,
+                      "end": 144.09625
+                    },
+                    {
+                      "word": "is ",
+                      "start": 144.09625,
+                      "end": 144.18925
+                    },
+                    {
+                      "word": "all ",
+                      "start": 144.18925,
+                      "end": 144.32825
+                    },
+                    {
+                      "word": "set.",
+                      "start": 144.32825,
+                      "end": 144.87425
+                    },
+                    {
+                      "word": " Just ",
+                      "start": 145.239,
+                      "end": 145.459
+                    },
+                    {
+                      "word": "to ",
+                      "start": 145.459,
+                      "end": 145.552
+                    },
+                    {
+                      "word": "confirm ",
+                      "start": 145.552,
+                      "end": 145.877
+                    },
+                    {
+                      "word": "— ",
+                      "start": 145.877,
+                      "end": 146.864
+                    },
+                    {
+                      "word": "you're ",
+                      "start": 146.864,
+                      "end": 147.189
+                    },
+                    {
+                      "word": "booking ",
+                      "start": 147.189,
+                      "end": 147.259
+                    },
+                    {
+                      "word": "a ",
+                      "start": 147.259,
+                      "end": 147.642
+                    },
+                    {
+                      "word": "Clinical ",
+                      "start": 147.642,
+                      "end": 148.037
+                    },
+                    {
+                      "word": "Facial ",
+                      "start": 148.037,
+                      "end": 148.199
+                    },
+                    {
+                      "word": "on ",
+                      "start": 148.199,
+                      "end": 149.128
+                    },
+                    {
+                      "word": "Wednesday, ",
+                      "start": 149.128,
+                      "end": 149.732
+                    },
+                    {
+                      "word": "September ",
+                      "start": 149.732,
+                      "end": 150.138
+                    },
+                    {
+                      "word": "24th ",
+                      "start": 150.138,
+                      "end": 150.545
+                    },
+                    {
+                      "word": "at ",
+                      "start": 150.545,
+                      "end": 150.73
+                    },
+                    {
+                      "word": "2:00 ",
+                      "start": 150.73,
+                      "end": 150.974
+                    },
+                    {
+                      "word": "PM, ",
+                      "start": 150.974,
+                      "end": 151.334
+                    },
+                    {
+                      "word": "at ",
+                      "start": 151.334,
+                      "end": 151.52
+                    },
+                    {
+                      "word": "our ",
+                      "start": 151.52,
+                      "end": 151.659
+                    },
+                    {
+                      "word": "Oakville ",
+                      "start": 151.659,
+                      "end": 152.031
+                    },
+                    {
+                      "word": "location, ",
+                      "start": 152.031,
+                      "end": 152.542
+                    },
+                    {
+                      "word": "with ",
+                      "start": 152.542,
+                      "end": 152.75
+                    },
+                    {
+                      "word": "Olivia ",
+                      "start": 152.75,
+                      "end": 153.145
+                    },
+                    {
+                      "word": "Chen, ",
+                      "start": 153.145,
+                      "end": 153.517
+                    },
+                    {
+                      "word": "under ",
+                      "start": 153.517,
+                      "end": 153.795
+                    },
+                    {
+                      "word": "the ",
+                      "start": 153.795,
+                      "end": 153.9
+                    },
+                    {
+                      "word": "name ",
+                      "start": 153.9,
+                      "end": 154.12
+                    },
+                    {
+                      "word": "John ",
+                      "start": 154.12,
+                      "end": 154.376
+                    },
+                    {
+                      "word": "Doe, ",
+                      "start": 154.376,
+                      "end": 155.107
+                    },
+                    {
+                      "word": "email ",
+                      "start": 155.107,
+                      "end": 155.49
+                    },
+                    {
+                      "word": "johndoe@gmail.com. ",
+                      "start": 155.49,
+                      "end": 156.059
+                    },
+                    {
+                      "word": "Total ",
+                      "start": 158.32304174804688,
+                      "end": 158.7300417480469
+                    },
+                    {
+                      "word": "is ",
+                      "start": 158.7300417480469,
+                      "end": 158.84604174804687
+                    },
+                    {
+                      "word": "$169.00, ",
+                      "start": 158.84604174804687,
+                      "end": 158.97304174804688
+                    },
+                    {
+                      "word": "and ",
+                      "start": 158.97304174804688,
+                      "end": 159.19404174804689
+                    },
+                    {
+                      "word": "it'll ",
+                      "start": 159.19404174804689,
+                      "end": 159.29804174804687
+                    },
+                    {
+                      "word": "take ",
+                      "start": 159.29804174804687,
+                      "end": 159.60004174804686
+                    },
+                    {
+                      "word": "about ",
+                      "start": 159.60004174804686,
+                      "end": 159.80904174804687
+                    },
+                    {
+                      "word": "60 ",
+                      "start": 159.80904174804687,
+                      "end": 160.32004174804686
+                    },
+                    {
+                      "word": "minutes.",
+                      "start": 160.32004174804686,
+                      "end": 160.54104174804687
+                    },
+                    {
+                      "word": " Sound ",
+                      "start": 161.99179174804686,
+                      "end": 162.21279174804687
+                    },
+                    {
+                      "word": "good?",
+                      "start": 162.21279174804687,
+                      "end": 162.71179174804686
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 18
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah perfect",
+                  "words": [
+                    {
+                      "word": "Yeah ",
+                      "start": 163.71599999999998,
+                      "end": 164.03599
+                    },
+                    {
+                      "word": "perfect",
+                      "start": 164.03599,
+                      "end": 164.43599999999998
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Let me book ",
+                  "words": [
+                    {
+                      "word": "Let ",
+                      "start": 166.648,
+                      "end": 166.787
+                    },
+                    {
+                      "word": "me ",
+                      "start": 166.787,
+                      "end": 166.869
+                    },
+                    {
+                      "word": "book ",
+                      "start": 166.869,
+                      "end": 167.043
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 19
+                  }
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "12072294bd423a1b",
+                  "name": "Booking",
+                  "arguments": "{\"endtime\":\"2025-09-24T15:00:00Z\",\"clientId\":\"LuminaMedSpaOakville\",\"starttime\":\"2025-09-24T14:00:00Z\",\"phone\":\"+12498005904\",\"execution_message\":\"Let me book that for you, Please hold on...\"}"
+                }
+              ],
+              "public_log_url": "https://dxc03zgurdly9.cloudfront.net/8d32e228149fbfa5ec6d0f77a56d0339212164276b06f8c27e051d72134692d0/public.log",
+              "latency": {},
+              "call_cost": {
+                "product_costs": [],
+                "total_duration_seconds": 0,
+                "total_duration_unit_price": 0,
+                "combined_cost": 0
+              },
+              "opt_out_sensitive_data_storage": false,
+              "data_storage_setting": "everything",
+              "opt_in_signed_url": false,
+              "from_number": "+12498005904",
+              "to_number": "+14374945352",
+              "direction": "inbound",
+              "telephony_identifier": {
+                "twilio_call_sid": "CA782a06e86d55b9ef99915cf7799b344c"
+              }
+            },
+            "name": "Booking",
+            "args": {
+              "endtime": "2025-09-24T15:00:00Z",
+              "clientId": "LuminaMedSpaOakville",
+              "starttime": "2025-09-24T14:00:00Z",
+              "phone": "+12498005904"
+            }
+          },
+          "webhookUrl": "https://n8n.srv899746.hstgr.cloud/webhook/g_create_booking",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "clientdata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "item matching",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Send SMS Confirmation1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "CalculateDuration",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "checkTime": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CalculateDuration": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "item matching": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clientdata": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS Confirmation1": {
+      "main": [
+        [
+          {
+            "node": "message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Create Google Calendar Event1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Send SMS Confirmation2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Calendar Event1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS Confirmation2": {
+      "main": [
+        [
+          {
+            "node": "Respond Success1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row1": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Get a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code7": {
+      "main": [
+        [
+          {
+            "node": "checkTime",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "Code7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an SMS/MMS/WhatsApp message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Etc/UTC",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "27a7447a-1859-421e-92ad-b060ff9dfffc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a23a5a36084a4adf4da38e7db159b4442d0f7fa26992b909bde4e7462f866101"
+  },
+  "id": "71dmFC3LfXrwio5M",
+  "tags": []
+}

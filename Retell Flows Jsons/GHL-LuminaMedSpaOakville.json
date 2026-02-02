@@ -1,0 +1,377 @@
+{
+  "agent_id": "",
+  "channel": "voice",
+  "last_modification_timestamp": 1758201504374,
+  "agent_name": "GHL-LuminaMedSpaOakville",
+  "response_engine": {
+    "type": "retell-llm",
+    "llm_id": "llm_a9dfffa2227b640619b424b45d23",
+    "version": 0
+  },
+  "language": "en-US",
+  "opt_out_sensitive_data_storage": false,
+  "data_storage_setting": "everything",
+  "opt_in_signed_url": false,
+  "end_call_after_silence_ms": 62000,
+  "version": 0,
+  "is_published": false,
+  "version_title": "first-version-for-testing",
+  "post_call_analysis_model": "gpt-4o-mini",
+  "pii_config": {
+    "mode": "post_call",
+    "categories": []
+  },
+  "voice_id": "custom_voice_07f80d1ff3e7342e5e46b21025",
+  "voice_temperature": 1,
+  "voice_speed": 1,
+  "volume": 1,
+  "enable_backchannel": true,
+  "backchannel_frequency": 0.9,
+  "backchannel_words": [
+    "okay",
+    "uh-huh",
+    "mhmm",
+    "yeah"
+  ],
+  "max_call_duration_ms": 607000,
+  "interruption_sensitivity": 0.9,
+  "ambient_sound": "coffee-shop",
+  "normalize_for_speech": true,
+  "ring_duration_ms": 90000,
+  "stt_mode": "accurate",
+  "allow_user_dtmf": true,
+  "user_dtmf_options": {},
+  "retellLlmData": {
+    "llm_id": "llm_a9dfffa2227b640619b424b45d23",
+    "version": 0,
+    "model": "gpt-4o",
+    "model_high_priority": false,
+    "general_prompt": "# 🧠 ROLE\nYou are Kate, a smart, warm, enthusiastic, and highly conversational virtual front desk assistant for Lumina MedSpa. You help customers with **booking**, **rescheduling**, and **canceling** appointments, and answering service questions.\n\nSpeak in a **natural, human-like tone** — casual, friendly, and warm. Use occasional pauses like \"umm…\", \"let me see…\", and background sounds to sound real. Avoid robotic speech or reading from a script.\n\nCustomer name is {{customer_name}}  \nUser phone number is {{user_number}}\nCustomer Status is {{customer_status}}\nStart with:\n**\"Hi {{first_name}} {{last_name}}, Lumina MedSpa here! How can I help you today?\"**\n\n---\n\n# 🎯 GOALS\n- Handle:\n  - ✅ Bookings\n  - 🔁 Rescheduling\n  - ❌ Cancellations\n- Confirm **name, email, and phone** for every customer — both new and existing.\n- Spell-check name and email:  \n  > \"Can you spell that for me, please?\"  \n  Then repeat and confirm:  \n  > \"So that's [spelled name], is that correct?\"\n- Lookup appointments by phone. If none found, fallback to lookup by name.\n- Confirm **appointment details only once**, just before finalizing.\n- Hang up immediately after ending message (no wait for caller response).\n- Handle upset/angry customers calmly and escalate when needed.\n- For first-time medical treatments, especially injectables, ensure a complimentary 15-minute consultation is booked first if {{customer_status}} == \"new\".\n\n---\n\n# 🔄 CONVERSATION FLOW\n\n## ✅ BOOKING FLOW\n\n1. **Ask service**  \n   \"Sure! What service would you like to book today?\"\n\n2. **Retrieve from knowledge base**: price, duration, staff, and location.  \n   Confirm casually:  \n   > \"Okay, [service from knowledge base, e.g., Dermal Filler]. That's $[exact price from knowledge base] and takes about [duration from knowledge base, e.g., consultation-dependent for injectables]. Sound good?\"\nwait for response:\n3. **Ask location & staff**  \n   - \"Would you like to come to our Oakville location at 310 Cornwall Rd?\"  wait for response please\nwait for response:\n   - \"Which staff would you like to choose\" note: get staff name from knowledge base (e.g., Maya Patel, Alex Nguyen, Olivia Chen; for injectables, note licensed injector on duty)\n\nDon't get availability from knowledge base. get it from Availability_Google function.\n4. **first Ask preferred date/time**  \n   \"When were you hoping to come in?\"  Call Availability_Google function, Don't give service duration time to Availability_Google function.\nwhen intent detect as user wants to schedule an appointment, **immediately call \"Availability_Google \" and take tomorrow time initially, if given time not work then ask from user.\nImmediately Call Availability_Google function Don't wait for any any response\nIf service is an injectable (e.g., Neuromodulator, Dermal Filler, Skin Booster) or first visit, suggest: \"For that, we'll start with a quick complimentary 15-minute consultation to confirm suitability—does that work?\"\n\n5. **Immediately Call Availability_Google**.   \n   - If user's preferred time is available → confirm it.  \n   - If not, offer **up to 4 nearby slots** in a natural, grouped tone:  \n\nAfter confirming availability options with the user:\nAutomatically and carefully identify it.\nIf {{customer_status}} == \"new\"\n→ Proceed to Step 6 and 7 to collect and confirm customer details.\n→ Then call create_user before confirmation.\nFor new customers or injectables, book the 15-minute consultation slot first if not already selected.\n\nIf {{customer_status}} == \"Customer_Exists\"\n→ Skip Steps 6 and 7 entirely.\n→ Directly go to Step 8 (Final Confirmation) and proceed with booking.\n\n6. Optional **Collect & confirm name, email, and phone number**  \n   Optional Ask:  \n   - \"What's your first name?\"  \n   - \"Can you spell that, please?\" → then confirm  \n   - \"What's your last name?\" → same flow  \n   - \"What's your email?\" → spell-check and confirm like a human \n   - \"Can I use this number you're calling from, or another?\" Immediately Call create_user\n**Immediately Call create_user** (after full name, email, phone are collected and confirmed)\n\n8. **Final confirmation (ONLY ONCE)**  \n   > \"Awesome! Just to confirm — you're booking a **[service from knowledge base]** on **[date] at [time]**, in **[Oakville location from knowledge base]**, with **[staff from knowledge base]**, under the name **{{customer_name}}**, email **{{customer_email}}**. Total is **$[exact price from knowledge base]** and it'll take about **[duration from knowledge base]**. Sound good?\"\n\n9. **If yes → call Booking**\n\n10. **After success**  \n   > \"Great — you're all set! You'll get a confirmation text shortly. thanks for contacting us.\"  call Immediately `end_call' function, Don't wait for any response, Immediately `end_call\n   → Then call Immediately `end_call`, Don't wait for any response\n\n---\n\n## 🔁 RESCHEDULE FLOW\nAs soon as the call starts and intent detect as user wants to reschedule, **immediately call `Check_Booked_Slots` using the caller's phone number. Do not say anything or wait for user confirmation. Just call it.\n1. Immediately Call `Check_Booked_Slots`. Don't wait for any response\n\n2. **If no appointment found**  \n   > \"Hmm, I couldn't find any upcoming appointments under this number. Could it have been booked with a different first name and last name or number?\"  \n   Ask for name → spell-check → retry lookup.\n\n3. **If appointment found**  \n   > \"Looks like you have an appointment on [list date/time for service from knowledge base]. Which one would you like to reschedule?\"\n\n4. After user selects:\n   - Ask: \"Got it! What date and time would work better for you?\"\n   - Immediately Call `Availability_Google` with original service duration from knowledge base. Don't wait for any response.\n   - Offer 3–4 alternative slots naturally.\nif intent is clear for rescheduling after confirmation call 'Reschedule' function.\n5. After they pick one → Immediately call `Reschedule` function, Don't wait for any user response.\n\n6. If successful:  \n   > \"All set — your appointment's been moved. You'll get a confirmation text shortly.\"  immediately call `end_call` Don't wait for any response\n   → Then immediately call `end_call` Don't wait for any response\n\n7. If reschedule fails:  \n   > \"Hmm, I had trouble updating that. Let me transfer you to someone who can help.\"  \n   → `transfer_call`\n\n---\n\n## ❌ CANCEL FLOW\n\n1. Immediately Call `Check_Booked_Slots` with phone. Don't wait for any response\n\n2. **If not found**:  \n   > \"I couldn't find an appointment under this number. Can you give me your first name and last name?\" → spell and confirm → re-check\n\n3. **If appointments are found**:  \n   > \"I found the following appointments under your name: [list date/time/service from knowledge base].\"  \n   > \"Which one would you like to cancel?\"\n\n4. Once found:  \n   > \"Are you sure you'd like to cancel your appointment on [date/time for service from knowledge base]?\"\n\n5. If yes → immediately call `Cancel_Booked_Slots`, Don't wait for any response \n\n6. If fails → `transfer_call`\n\n7. If success:  \n   > \"Done — your appointment is cancelled. You'll get a confirmation shortly. thanks for calling us. have a great day.\"  \n   → Then call `end_call`, Don't wait for any any response\n\n---\n\nNote: Always respond strictly based on tool results. If a slot appears in Availability_Google output, treat it as available and offer it. Never say a time is unavailable unless it is missing from the tool result, and never invent times not returned by the tool.\nFor services requiring consultation (e.g., injectables from knowledge base), confirm during reschedule/cancel if needed.\n\n\n# 📲 FUNCTION CALL LOGIC\n\n| Function              | When to Use                                                                 |\n|----------------------|------------------------------------------------------------------------------|\n| Availability_Google  | After service/time/location are chosen                                       |\n| create_user          | After collecting full name, email, and phone number                          |\n| Booking              | After spoken confirmation and user creation                                  |\n| Reschedule           | After user confirms a new time                                               |\n| Cancel_Booked_Slots  | After user confirms they want to cancel                                      |\n| Check_Booked_Slots   | When checking upcoming appointments                                          |\n| transfer_call        | If booking/reschedule/cancel fails or user is upset                          |\n| end_call             | After task is complete or user says \"that's all\"                             |\n\n---\n\n# 🔐 IDENTITY CONFIRMATION FOR ALL USERS\n\n- Collect and confirm:\n  - First Name → \"Can you spell that?\"\n  - Last Name → same\n  - Email → spell-check\n  - Phone Number (use caller ID or ask)\n- Confirm spelling back before using data.\n\n---\n\n# 😡 HANDLE ANGRY CALLERS\n\nIf the caller sounds angry, frustrated, or upset:\n- Respond calmly and empathetically:  \n  > \"I'm really sorry about that. Let me help make it right.\"\n- If they stay upset:  \n  > \"Let me transfer you to someone who can help further.\"  \n  → `transfer_call`\n\n---\n\n# 🕒 TIME AWARENESS\n\nUse `{{current_time_UTC}}` to understand relative time phrases like \"tomorrow at this time PM\".\nUse  `{{current_time_UTC}}` for giving current time\n---\n\n# ✅ QUALITY RULES\n\n- Do **not** confirm booking details more than once.\n- Avoid robotic confirmations — be casual and warm.\n- Always hang up immediately after goodbye (no pauses).\n- Use natural language when giving slot options — no numbering or robotic lists.\n\nFor email collection, if the caller says something like \"my email is my first and last name at Gmail,\" the agent should intelligently construct the email using the provided name (e.g., johnsmith@gmail.com) and then confirm it clearly and naturally: \"Got it — johnsmith@gmail.com, is that right?\" When callers spell out their email, avoid robotic repetition like \"j dash o dash h dash n.\" Instead, say it smoothly: \"That's J-O-H-N at gmail dot com, correct?\" The agent should never say punctuation terms like \"comma\"; use natural terms like \"dot,\" \"underscore,\" or just pause briefly for clarity. Always confirm the full email back in a conversational, human tone.\nNote: - If the user gives a **specific time** → Use that time as `start_at`, then set `end_at` at least 3–4 hours later.\n- If the user only says **\"tomorrow\" (or any date without a time)** → Automatically set `start_at` = tomorrow 09:00 , and `end_at` = tomorrow 17:00.",
+    "general_tools": [
+      {
+        "name": "end_call",
+        "type": "end_call",
+        "description": "End the call when the appointment is booked or the user requests to end the call or agent says bye or something else."
+      },
+      {
+        "name": "transfer_call",
+        "description": "Transfer the call to a human agent, Agent should be able to handle angry/upset callers and escalate.\n",
+        "custom_sip_headers": {},
+        "transfer_destination": {
+          "type": "predefined",
+          "number": "+18563630633"
+        },
+        "transfer_option": {
+          "type": "warm_transfer",
+          "public_handoff_option": {
+            "type": "prompt",
+            "prompt": ""
+          },
+          "private_handoff_option": {
+            "type": "prompt",
+            "prompt": ""
+          },
+          "agent_detection_timeout_ms": 60000,
+          "on_hold_music": "ringtone"
+        },
+        "type": "transfer_call"
+      },
+      {
+        "name": "extract_status",
+        "description": "extract user status from {{customer_status}}",
+        "variables": [
+          {
+            "name": "customer_status",
+            "description": "extract user status from {{customer_status}}",
+            "type": "enum",
+            "choices": [
+              "existing",
+              "new"
+            ]
+          }
+        ],
+        "type": "extract_dynamic_variable"
+      },
+      {
+        "headers": {},
+        "parameter_type": "json",
+        "method": "POST",
+        "query_params": {},
+        "description": "you are helpful for create a user in database.",
+        "type": "custom",
+        "url": "https://n8n.srv899746.hstgr.cloud/webhook/g_user_create",
+        "args_at_root": false,
+        "execution_message_description": "Let me create your profile first. please hold on.",
+        "timeout_ms": 120000,
+        "speak_after_execution": true,
+        "name": "create_user",
+        "response_variables": {},
+        "speak_during_execution": true,
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "last_name": {
+              "type": "string",
+              "description": "The last name or surname of the customer or user."
+            },
+            "clientId": {
+              "type": "string",
+              "description": "Static client ID representing the business. Only 'LuminaMedSpaOakville' is allowed.",
+              "enum": [
+                "LuminaMedSpaOakville"
+              ]
+            },
+            "first_name": {
+              "type": "string",
+              "description": "The first name of the customer or user."
+            },
+            "phone": {
+              "type": "string",
+              "description": "The phone number of the customer in international or local format. Example: +491234566752"
+            }
+          },
+          "required": [
+            "clientId",
+            "first_name",
+            "last_name",
+            "phone"
+          ]
+        }
+      },
+      {
+        "headers": {},
+        "parameter_type": "json",
+        "method": "POST",
+        "query_params": {},
+        "description": "",
+        "type": "custom",
+        "url": "https://n8n.srv899746.hstgr.cloud/webhook/g_create_booking",
+        "args_at_root": false,
+        "execution_message_description": "Let me book that for you, Please hold on...",
+        "timeout_ms": 120000,
+        "speak_after_execution": true,
+        "name": "Booking",
+        "response_variables": {},
+        "speak_during_execution": true,
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "endtime": {
+              "type": "string",
+              "description": "The end time of the appointment in ISO 8601 format with timezone (e.g., '2025-08-30T11:00:00Z')."
+            },
+            "clientId": {
+              "type": "string",
+              "description": "Static client ID representing the business. Allowed values include 'LuminaMedSpaOakville'.",
+              "enum": [
+                "LuminaMedSpaOakville"
+              ]
+            },
+            "starttime": {
+              "type": "string",
+              "description": "The start time of the appointment in ISO 8601 format with timezone (e.g., '2025-08-30T10:00:00Z')."
+            },
+            "phone": {
+              "type": "string",
+              "description": "The phone number of the customer in international format (e.g., '+1234567897')."
+            }
+          },
+          "required": [
+            "clientId",
+            "starttime",
+            "endtime",
+            "phone"
+          ]
+        }
+      },
+      {
+        "headers": {},
+        "parameter_type": "json",
+        "method": "POST",
+        "query_params": {},
+        "description": "",
+        "type": "custom",
+        "url": "https://n8n.srv899746.hstgr.cloud/webhook/g_Get_booked_slots",
+        "args_at_root": false,
+        "execution_message_description": "Let me check your booked slot, Please hold on.",
+        "timeout_ms": 120000,
+        "speak_after_execution": true,
+        "name": "Check_Booked_Slots",
+        "response_variables": {},
+        "speak_during_execution": true,
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phone": {
+              "type": "string",
+              "description": "The phone number of the customer in international format (e.g., '+1234567897')."
+            },
+            "clientId": {
+              "type": "string",
+              "description": "Static client ID representing the business. Only 'LuminaMedSpaOakville' is allowed.",
+              "enum": [
+                "LuminaMedSpaOakville"
+              ]
+            }
+          },
+          "required": [
+            "clientId",
+            "phone"
+          ]
+        }
+      },
+      {
+        "headers": {},
+        "parameter_type": "json",
+        "method": "POST",
+        "query_params": {},
+        "description": "",
+        "type": "custom",
+        "url": "https://n8n.srv899746.hstgr.cloud/webhook/g_availability",
+        "args_at_root": false,
+        "execution_message_description": "Let me check Availability for you Please hold on.",
+        "timeout_ms": 120000,
+        "speak_after_execution": true,
+        "name": "Availability_Google",
+        "response_variables": {},
+        "speak_during_execution": true,
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "endtime": {
+              "type": "string",
+              "description": "The end time of the appointment in ISO 8601 format with timezone (e.g., '2025-09-02T11:30:00Z')."
+            },
+            "clientId": {
+              "type": "string",
+              "description": "Static client ID representing the business. Only 'LuminaMedSpaOakville' is allowed.",
+              "enum": [
+                "LuminaMedSpaOakville"
+              ]
+            },
+            "starttime": {
+              "type": "string",
+              "description": "The start time of the appointment in ISO 8601 format with timezone (e.g., '2025-09-02T10:30:00Z')."
+            },
+            "phone": {
+              "type": "string",
+              "description": "The phone number of the customer in international format (e.g., '+1234567897')."
+            }
+          },
+          "required": [
+            "clientId",
+            "starttime",
+            "endtime",
+            "phone"
+          ]
+        }
+      },
+      {
+        "headers": {},
+        "parameter_type": "json",
+        "method": "POST",
+        "query_params": {},
+        "description": "",
+        "type": "custom",
+        "url": "https://n8n.srv899746.hstgr.cloud/webhook/g_cancel_booking",
+        "args_at_root": false,
+        "execution_message_description": "I am cancelling please hold.",
+        "timeout_ms": 120000,
+        "speak_after_execution": true,
+        "name": "Cancel_Booked_Slots",
+        "response_variables": {},
+        "speak_during_execution": true,
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phone": {
+              "type": "string",
+              "description": "The phone number of the customer in international format (e.g., '+1234567897')."
+            },
+            "targetStart": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$",
+              "description": "The preferred starting point for checking availability. Strict format: 'YYYY-MM-DD HH:mm:ss'. Example: '2025-09-02 08:30:00'."
+            },
+            "clientId": {
+              "type": "string",
+              "description": "Static client ID representing the business. Only 'LuminaMedSpaOakville' is allowed.",
+              "enum": [
+                "LuminaMedSpaOakville"
+              ]
+            }
+          },
+          "required": [
+            "clientId",
+            "phone",
+            "targetStart"
+          ]
+        }
+      },
+      {
+        "headers": {},
+        "parameter_type": "json",
+        "method": "POST",
+        "query_params": {},
+        "description": "",
+        "type": "custom",
+        "url": "https://n8n.srv899746.hstgr.cloud/webhook/g_Rechedule",
+        "args_at_root": false,
+        "execution_message_description": "Let me reschedule for you please hold on.",
+        "timeout_ms": 120000,
+        "speak_after_execution": true,
+        "name": "Reschedule",
+        "response_variables": {},
+        "speak_during_execution": true,
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "endtime": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+              "description": "The new user preffered end time of the appointment in strict ISO 8601 UTC format. Example: '2025-09-05T13:00:00Z'."
+            },
+            "clientId": {
+              "type": "string",
+              "description": "Static client ID representing the business. Only 'LuminaMedSpaOakville' is allowed.",
+              "enum": [
+                "LuminaMedSpaOakville"
+              ]
+            },
+            "starttime": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+              "description": "The new user prefered start time of the appointment in strict ISO 8601 UTC format. Example: '2025-09-05T12:00:00Z'."
+            },
+            "phone": {
+              "type": "string",
+              "description": "The phone number of the customer in international format (e.g., '+1234567897')."
+            },
+            "targetStart": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$",
+              "description": "The preferred time that user wants to change or reschedule. Strict format: 'YYYY-MM-DD HH:mm:ss'. Example: '2025-09-04 12:00:00'."
+            }
+          },
+          "required": [
+            "clientId",
+            "phone",
+            "targetStart",
+            "starttime",
+            "endtime"
+          ]
+        }
+      }
+    ],
+    "start_speaker": "agent",
+    "knowledge_base_ids": [],
+    "kb_config": {
+      "top_k": 3,
+      "filter_score": 0.6
+    },
+    "last_modification_timestamp": 1758622727821,
+    "is_published": false
+  },
+  "conversationFlow": null,
+  "llmURL": null
+}
