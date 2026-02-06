@@ -12,7 +12,7 @@ A comprehensive voice-based appointment booking system that combines **Retell AI
   - [Retell AI Voice Agents](#retell-ai-voice-agents)
   - [n8n Workflows](#n8n-workflows)
 - [Supported CRM Integrations](#supported-crm-integrations)
-- [Setup Guide](#setup-guide)
+- [Setup Guide](#setup-guide) 
 - [API Endpoints](#api-endpoints)
 - [Function Reference](#function-reference)
 - [Database Schema](#database-schema)
