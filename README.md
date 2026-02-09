@@ -1,6 +1,6 @@
 # Retell AI Voice Agent + n8n Appointment Booking System
 
-A comprehensive voice-based appointment booking system that combines **Retell AI** voice agents with **n8n** automation workflows. This system enables automated phone-based appointment booking, rescheduling, and cancellation for various business types.
+A comprehensive voice-based appointment booking system that combines **Retell AI** voice agents with **n8n** automation workflows. This system enables automated phone-based appointment booking, rescheduling, and cancellation for various business types. 
 
 ---
 
